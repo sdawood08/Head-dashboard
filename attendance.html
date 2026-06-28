@@ -127,6 +127,10 @@
   .badge.ok{background:rgba(95,184,166,0.18);color:var(--ok);}
   .badge.warn{background:rgba(232,163,61,0.18);color:var(--warn);}
   .badge.danger{background:rgba(217,105,90,0.18);color:var(--danger);}
+  .reminder-banner{
+    background:#FCEFE3; border:1px solid var(--accent); border-radius:10px;
+    padding:10px 16px; font-size:12.5px; margin-bottom:16px;
+  }
 </style>
 </head>
 <body>
@@ -135,6 +139,9 @@
 <div class="subtitle">يعرض محاضرات اليوم المحدد تلقائيًا من الجدول — تسجلين فقط الحضور والملاحظات</div>
 
 <button id="exportBtn" style="background:var(--accent);color:#13231F;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:bold;cursor:pointer;margin-bottom:18px;">⬇️ تصدير البيانات لـ Power BI (CSV)</button>
+<button id="syncAllBtn" style="background:var(--accent-2);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:bold;cursor:pointer;margin-bottom:18px;margin-right:8px;">🔄 مزامنة كل السجلات إلى Google Sheets</button>
+
+<div id="reminderBanner"></div>
 
 
 <div class="top-row">
@@ -283,12 +290,53 @@ function setStatus(key, status){
   attendance[key].status = status;
   saveAttendance();
   render();
+  syncKeyToExcel(key);
+}
+
+const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzrCds6xfATzHAV2w6LBfuwffrs5TZ_ydU4FPOKmqC4-OkzzA54zttI9koCBQThVBLL/exec";
+
+function syncKeyToExcel(key){
+  try{
+    const [date, rest] = key.split('|');
+    const parts = rest.split('_');
+    const courseCode = parts[0];
+    const trainer = parts[1];
+    const time = parts[2];
+    const day = parts[3];
+    const rec = SCHEDULE.find(r=>r.courseCode===courseCode && r.trainer===trainer && r.time===time && r.day===day);
+    if(!rec) return;
+
+    const payload = {
+      "__sheet__": "متابعة_الحضور",
+      "التاريخ": date,
+      "الأسبوع": getWeekNumber(date),
+      "اليوم": day,
+      "المدربة": trainer,
+      "المقرر": rec.course,
+      "رمز المقرر": courseCode,
+      "القاعة": rec.roomDesc || rec.room,
+      "القسم": rec.section,
+      "الوقت": time,
+      "الحالة": (attendance[key] && attendance[key].status) || "",
+      "ملاحظات": (attendance[key] && attendance[key].notes) || ""
+    };
+
+    fetch(SHEETS_WEBHOOK_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'text/plain' },
+      body: JSON.stringify(payload)
+    }).catch(()=>{ /* فشل صامت لا يعطل الصفحة */ });
+  }catch(e){
+    console.error('فشل المزامنة مع Google Sheets', e);
+  }
 }
 
 function setNotes(key, value){
   if(!attendance[key]) attendance[key] = {};
   attendance[key].notes = value;
   saveAttendance();
+  syncKeyToExcel(key);
 }
 
 function render(){
@@ -438,15 +486,47 @@ function exportToCSV(){
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+
+  try{ localStorage.setItem('attendance-last-export', new Date().toISOString()); }catch(e){}
+  renderReminderBanner();
+}
+
+function renderReminderBanner(){
+  const banner = document.getElementById('reminderBanner');
+  let lastExport = null;
+  try{ lastExport = localStorage.getItem('attendance-last-export'); }catch(e){}
+  if(!lastExport){
+    banner.innerHTML = `<div class="reminder-banner">📤 لم يسبق تصدير نسخة من سجلات الحضور. يُفضّل تصدير نسخة أسبوعيًا.</div>`;
+    return;
+  }
+  const days = Math.floor((new Date() - new Date(lastExport)) / (1000*60*60*24));
+  if(days >= 7){
+    banner.innerHTML = `<div class="reminder-banner">📤 آخر تصدير كان منذ ${days} يومًا — حان وقت تصدير نسخة جديدة.</div>`;
+  } else {
+    banner.innerHTML = '';
+  }
 }
 
 document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+
+document.getElementById('syncAllBtn').addEventListener('click', ()=>{
+  const keys = Object.keys(attendance);
+  if(keys.length===0){
+    alert('لا توجد سجلات لمزامنتها بعد.');
+    return;
+  }
+  keys.forEach((k, i)=>{
+    setTimeout(()=>syncKeyToExcel(k), i*150);
+  });
+  alert('بدأت المزامنة... سترسل ' + keys.length + ' سجل إلى Excel خلال ثوانٍ.');
+});
 
 (async function init(){
   await loadAttendance();
   await loadSemesterStart();
   buildFilters();
   render();
+  renderReminderBanner();
 })();
 </script>
 
