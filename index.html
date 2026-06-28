@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>لوحة متابعة قسم تقنية الحاسب</title>
+<style>
+  :root{
+    --bg:#F7F5F1; --panel:#FFFFFF; --panel-2:#F0EDE7;
+    --accent:#C97D2C; --accent-2:#3C8C7A; --text:#1F2A29; --text-dim:#6B7674;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Tahoma','Segoe UI',sans-serif; padding:30px; }
+  h1{ font-size:24px; margin:0 0 6px; }
+  .subtitle{ color:var(--text-dim); font-size:14px; margin-bottom:30px; }
+  .grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px; max-width:1000px; }
+  a.card{
+    background:var(--panel); border-radius:14px; padding:22px;
+    border:1px solid rgba(0,0,0,0.08); box-shadow:0 1px 6px rgba(0,0,0,0.06);
+    text-decoration:none; color:var(--text); display:block; transition:0.15s;
+  }
+  a.card:hover{ box-shadow:0 4px 14px rgba(0,0,0,0.1); transform:translateY(-2px); }
+  .icon{ font-size:30px; margin-bottom:10px; }
+  .title{ font-size:16px; font-weight:bold; margin-bottom:6px; color:var(--accent); }
+  .desc{ font-size:12.5px; color:var(--text-dim); line-height:1.6; }
+</style>
+</head>
+<body>
+
+<h1>📋 لوحة متابعة قسم تقنية الحاسب والمعلومات</h1>
+<div class="subtitle">اختاري الصفحة التي تريدين الانتقال إليها</div>
+
+<div class="grid">
+  <a class="card" href="day_schedule.html">
+    <div class="icon">📅</div>
+    <div class="title">جدول المحاضرات اليومي</div>
+    <div class="desc">عرض محاضرات كل يوم مع الوقت، المدربة، والقاعة، مع فلاتر متعددة</div>
+  </a>
+
+  <a class="card" href="attendance.html">
+    <div class="icon">✅</div>
+    <div class="title">متابعة حضور وغياب المدربات</div>
+    <div class="desc">تسجيل الحضور اليومي للمدربات مرتبطًا مباشرة بجدول المحاضرات</div>
+  </a>
+
+  <a class="card" href="platform_tracking.html">
+    <div class="icon">🖥️</div>
+    <div class="title">متابعة منصة تقني</div>
+    <div class="desc">متابعة استكمال متطلبات منصة تقني لكل مدربة ومقرر</div>
+  </a>
+
+  <a class="card" href="files_tracking.html">
+    <div class="icon">📁</div>
+    <div class="title">متابعة مجلد المتابعة</div>
+    <div class="desc">متابعة ملفات العملية التدريبية والتطوير المهني لكل مدربة</div>
+  </a>
+</div>
+
+</body>
+</html>
