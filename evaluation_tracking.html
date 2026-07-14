@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root{
+    --bg:#F7F5F1; --panel:#FFFFFF; --panel-2:#F0EDE7;
+    --accent:#C97D2C; --accent-2:#3C8C7A; --text:#1F2A29; --text-dim:#6B7674; --danger:#C0463A;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Tahoma','Segoe UI',sans-serif; padding:24px; }
+  h1{ font-size:22px; margin:0 0 4px; }
+  .subtitle{ color:var(--text-dim); font-size:13px; margin-bottom:20px; }
+
+  .reminder-banner{
+    background:#FCEFE3; border:1px solid var(--accent); border-radius:10px;
+    padding:10px 16px; font-size:12.5px; margin-bottom:16px;
+  }
+
+  .top-row{ display:flex; gap:14px; flex-wrap:wrap; margin-bottom:18px; align-items:flex-end; }
+  .field{ display:flex; flex-direction:column; min-width:220px; }
+  .field label{ font-size:11.5px; color:var(--text-dim); margin-bottom:4px; }
+  .field input, .field select{
+    background:var(--panel-2); border:1px solid rgba(0,0,0,0.1); border-radius:8px;
+    padding:9px 12px; color:var(--text); font-size:13px; font-family:inherit;
+  }
+
+  .overview-table{
+    background:var(--panel); border-radius:12px; padding:16px 18px; margin-bottom:18px;
+    border:1px solid rgba(0,0,0,0.08); box-shadow:0 1px 4px rgba(0,0,0,0.05);
+  }
+  .overview-table h3{ font-size:13.5px; color:var(--accent); margin:0 0 10px; }
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  th{ text-align:right; color:var(--text-dim); font-weight:normal; border-bottom:1px solid rgba(0,0,0,0.1); padding:6px 4px; }
+  td{ padding:7px 4px; border-bottom:1px solid rgba(0,0,0,0.05); }
+  .score-bar-track{ background:var(--panel-2); border-radius:10px; height:8px; width:100px; overflow:hidden; display:inline-block; vertical-align:middle; margin-left:6px; }
+  .score-bar-fill{ background:var(--accent-2); height:100%; border-radius:10px; }
+  .score-bar-fill.low{ background:var(--danger); }
+  .eval-row{ cursor:pointer; }
+  .eval-row:hover{ background:var(--panel-2); }
+
+  .eval-panel{
+    background:var(--panel); border-radius:12px; padding:18px; margin-bottom:18px;
+    border:1px solid rgba(0,0,0,0.08); box-shadow:0 1px 4px rgba(0,0,0,0.05);
+  }
+  .eval-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+  .eval-header .name{ font-size:16px; font-weight:bold; }
+  .eval-total{ font-size:14px; font-weight:bold; color:var(--accent-2); }
+  .eval-total.low{ color:var(--danger); }
+
+  .group-block{ margin-bottom:16px; border-top:1px solid rgba(0,0,0,0.06); padding-top:12px; }
+  .group-block:first-of-type{ border-top:none; }
+  .group-title{ font-size:13px; font-weight:bold; color:var(--accent); margin-bottom:8px; display:flex; justify-content:space-between; }
+  .group-title .gsub{ font-size:12px; color:var(--accent-2); font-weight:normal; }
+
+  .criteria-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:6px 0; border-bottom:1px solid rgba(0,0,0,0.04); font-size:12.5px;
+  }
+  .criteria-row:last-child{ border-bottom:none; }
+  .criteria-row .label{ flex:1; }
+  .criteria-row .weight-hint{ color:var(--text-dim); font-size:11px; }
+  .criteria-row input{
+    width:65px; text-align:center; background:var(--panel-2); border:1px solid rgba(0,0,0,0.1);
+    border-radius:8px; padding:5px; font-size:12.5px; font-family:inherit;
+  }
+
+  .empty{ text-align:center; color:var(--text-dim); padding:30px; }
+</style>
+</head>
+<body>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+  <a href="index.html" style="text-decoration:none;color:var(--accent);font-size:13px;font-weight:bold;">🏠 الصفحة الرئيسية</a>
+  <button id="clearDataBtn" style="background:none;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;">🗑️ مسح البيانات</button>
+</div>
+
+<h1>📝 تقييم أعضاء هيئة التدريب — الفصل</h1>
+<div class="subtitle">اختاري مدربة لإدخال درجات تقييمها حسب معايير المؤسسة، وتظهر النتيجة الإجمالية تلقائيًا</div>
+
+<button id="exportBtn" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:bold;cursor:pointer;margin-bottom:18px;">⬇️ تصدير إلى Excel (CSV)</button>
+
+<div id="reminderBanner"></div>
+
+<div class="top-row">
+  <div class="field">
+    <label>المدربة</label>
+    <select id="trainerSelect"></select>
+  </div>
+</div>
+
+<div class="overview-table">
+  <h3>📊 نظرة عامة على كل المدربات</h3>
+  <div id="overviewBox"></div>
+</div>
+
+<div id="evalPanel"></div>
+
+<script>
+const EVAL_DATA = {"criteria": [{"group": "توزيع الخطة التدريبية بشكل مناسب", "label": "يوجد خطة مكتوبة وموزعة على الاسابيع التدريبية", "weight": 3.5}, {"group": "توزيع الخطة التدريبية بشكل مناسب", "label": "التزام بالجدول الزمني للاسابيع", "weight": 3.5}, {"group": "تمكن من المادة التدريبة وتحقيق اهدافها ٧ درجات", "label": "يعرض الاهداف التدريبية", "weight": 1.5}, {"group": "تمكن من المادة التدريبة وتحقيق اهدافها ٧ درجات", "label": "التمكن من المقرر التدريبي", "weight": 2.0}, {"group": "تمكن من المادة التدريبة وتحقيق اهدافها ٧ درجات", "label": "يعرض ويطبق المهارات", "weight": 2.0}, {"group": "تمكن من المادة التدريبة وتحقيق اهدافها ٧ درجات", "label": "يساهم في اثراء المقرر", "weight": 1.5}, {"group": "تطبيق اسس ومفاهيم التدريب", "label": "يلم برؤية ورسالة المؤسسة", "weight": 1.0}, {"group": "تطبيق اسس ومفاهيم التدريب", "label": "القدرة على ادارة المتدربين", "weight": 1.0}, {"group": "تطبيق اسس ومفاهيم التدريب", "label": "توزيع فترة التديب", "weight": 1.5}, {"group": "تطبيق اسس ومفاهيم التدريب", "label": "يستخدم اساليب تدريبية متنوعة", "weight": 1.5}, {"group": "تطبيق اسس ومفاهيم التدريب", "label": "يتحرك بشكل مناسب", "weight": 1.0}, {"group": "تطبيق اسس ومفاهيم التدريب", "label": "استخدام المواد بشكل مناسب", "weight": 1.0}, {"group": "استخدام تقنيات واساليب التديب الحديثة", "label": "استخدام  تقنيات التدرب الالكتروني", "weight": 2.0}, {"group": "استخدام تقنيات واساليب التديب الحديثة", "label": "يحرص على تحقيق استخدام الامثل للوسائل التدريبية وانظمة التدرب الالكتروني", "weight": 1.5}, {"group": "استخدام تقنيات واساليب التديب الحديثة", "label": "يحرص على تنمية مهاراته في استعمال الوسائل المناسبة والتقنيات الحديثة", "weight": 1.5}, {"group": "استخدام تقنيات واساليب التديب الحديثة", "label": "ابتكار أساليب تدريبة حديثة لعرض المقرر التدريبي", "weight": 2.0}, {"group": "التقييم باجراءات السلامة", "label": "يتبع قواعد واجراءات الصحة والسلامة المهنية", "weight": 1.5}, {"group": "التقييم باجراءات السلامة", "label": "يحرص على نظافة القاعة أو المعمل", "weight": 1.5}, {"group": "التقييم باجراءات السلامة", "label": "يقدم الاقتراحات والحلول لمشاكل السلامة", "weight": 1.0}, {"group": "التقييم باجراءات السلامة", "label": "يشغل ويتعامل مع التجهيزات والمعدات بطريقة آمنة", "weight": 1.0}, {"group": "التقييم باجراءات السلامة", "label": "يبلغ عن المخاطر ويصحح ممارسات والأوضاع الخطيرة", "weight": 1.0}, {"group": "مراعاة الفروق الفردية بين بدابة الفصل التدريبي", "label": "يتعرف على مستويات المتدربين في بداية الفصل التدريبي", "weight": 1.5}, {"group": "مراعاة الفروق الفردية بين بدابة الفصل التدريبي", "label": "يتابع أداء المتدربين من خلال السجلات", "weight": 1.5}, {"group": "مراعاة الفروق الفردية بين بدابة الفصل التدريبي", "label": "يراعي الفروق الفردية بين المتدربين عند اجراء التقييم", "weight": 1.5}, {"group": "مراعاة الفروق الفردية بين بدابة الفصل التدريبي", "label": "يحرص على تطوير المتدربين من خلال السجلات", "weight": 2.0}, {"group": "مراعاة الفروق الفردية بين بدابة الفصل التدريبي", "label": "يتبع استراتيجيات متعددة في عرض المقرر تغطي الويات المعرفية للمتدربين", "weight": 1.5}, {"group": "العناية بصيانة المعدات و اجهزة التدريب", "label": "يحرص على صيانة الاجهزة والمعدات في الورشة/ المعامل .", "weight": 2.0}, {"group": "العناية بصيانة المعدات و اجهزة التدريب", "label": "يراعي التعليمات الخاصة بصيانة الأجهزة وتشغيلها", "weight": 2.0}, {"group": "العناية بصيانة المعدات و اجهزة التدريب", "label": "يطور أساليب العناية بصيانة المعدات وأجهزة التدريب", "weight": 2.0}, {"group": "الاهتمام بالنمو المهني والمعرفي وتطوير الذات", "label": "يحرص على زيادة معلوماته وخبراته في مجال تخصصه حسب المصادر المتاحة", "weight": 1.5}, {"group": "الاهتمام بالنمو المهني والمعرفي وتطوير الذات", "label": "يحرص على المشاركة في الدورات وورش العمل والمحاضرات والندوات في مجال تخصصه", "weight": 2.0}, {"group": "الاهتمام بالنمو المهني والمعرفي وتطوير الذات", "label": "يساهم في نقل خبراته وماتعلمه لزملائه", "weight": 1.5}, {"group": "تنظيم ملف المقرر التدريبي", "label": "يلم مفهوم وأهمية ملف المقرر وفوائده", "weight": 1.0}, {"group": "تنظيم ملف المقرر التدريبي", "label": "يقوم بتعبئة النماذج المعتمدة فيمايتعلق بملف المقرر", "weight": 2.0}, {"group": "تنظيم ملف المقرر التدريبي", "label": "ينظم ملف المقرر بالطريقة المناسبة", "weight": 2.0}, {"group": "تقييم المتدربين حسب الخطة المعتمدة", "label": "يتابع اعمال المتدربين ( الواجبات , التمارين ) ويرصد الدرجات", "weight": 1.0}, {"group": "تقييم المتدربين حسب الخطة المعتمدة", "label": "يجري الاختبارات القصيرة لمحتويات المقرر", "weight": 1.0}, {"group": "تقييم المتدربين حسب الخطة المعتمدة", "label": "يحلل نتائج الاختبارات  لمعالجة القصور", "weight": 1.0}, {"group": "تقييم المتدربين حسب الخطة المعتمدة", "label": "ينوع أساليب التقييم (الشفهية - الكتابية - العملية ) بما يتفق مع طبيعة  المادة التدريبية , قدرات المتدربين , الامكانات المتاحة", "weight": 1.0}, {"group": "تقييم المتدربين حسب الخطة المعتمدة", "label": "يعد الاختباارت الشاملة للمنهج التدريبي وفق الاسس العلمية", "weight": 1.0}, {"group": "تقييم المتدربين حسب الخطة المعتمدة", "label": "يوظف أساليب التقييم القبلي والتكويني والنهائي لقياس مدى تحقق للاهداف", "weight": 1.0}, {"group": "المساهمة في التوجيه والإرشاد التدريبي للمتدربين", "label": "يلم بمفهوم التوجيه المهني والارشاد التدريبي", "weight": 0.5}, {"group": "المساهمة في التوجيه والإرشاد التدريبي للمتدربين", "label": "يتواجد بمكتبه لارشاد المتدربين", "weight": 1.0}, {"group": "المساهمة في التوجيه والإرشاد التدريبي للمتدربين", "label": "ينجز مايوكل اليه من توجيه وارشاد تدريبي للمتدربين في القسم", "weight": 1.0}, {"group": "المساهمة في التوجيه والإرشاد التدريبي للمتدربين", "label": "يتمتع بروح المبادرة في معرفة قدرات واتجاهات وظروف المتدربين الذين يشرف عليهم", "weight": 1.0}, {"group": "المساهمة في التوجيه والإرشاد التدريبي للمتدربين", "label": "ينسق مع الرئيس المباشر والمرشد لمعالجة مشاكل المتدربين", "weight": 1.0}, {"group": "المساهمة في التوجيه والإرشاد التدريبي للمتدربين", "label": "يتابع متدربيه خلال الفصل التدريبي بشكل واضح ودقيق ويسعى دائما الى تقديم النصح والارشاد لهم .", "weight": 1.5}, {"group": "مستوى التحصيل المعرفي والمهاري لدى المتدربين", "label": "يستخدم سجل متابعة أداء المتدرب بطريقة صحيحة", "weight": 1.0}, {"group": "مستوى التحصيل المعرفي والمهاري لدى المتدربين", "label": "تقديم المساعدة الفعالة لكل متدرب لتحسين مستواه التدريبي", "weight": 1.0}, {"group": "مستوى التحصيل المعرفي والمهاري لدى المتدربين", "label": "التعرف على أسباب الاخفاق التحصيلي لدى المتدربين", "weight": 1.0}, {"group": "مستوى التحصيل المعرفي والمهاري لدى المتدربين", "label": "الحرص على امتلاك المتدربين المقدرة على التطبيق", "weight": 1.0}, {"group": "مستوى التحصيل المعرفي والمهاري لدى المتدربين", "label": "يحلل نتائج التطبيقات والاختبارات والملاحظات بأساليب احصائية مناسبة", "weight": 1.0}, {"group": "اعداد ملف الانجاز المهني", "label": "يقوم باعداد ملف خاص بالانجاز المهني له حسب المعايير الخاصة", "weight": 2.0}, {"group": "اعداد ملف الانجاز المهني", "label": "يقوم بتعبئة النماذج المعتمدة فيما يتعلق بملف المقرر", "weight": 2.0}, {"group": "اعداد ملف الانجاز المهني", "label": "ينظم ملف المقرر بالطريقة المناسبة", "weight": 1.0}, {"group": "المشاركة في الانشطة اللامنهجية", "label": "يساهم في مجالات الانشطة المتعلقة بالمتدربين", "weight": 1.5}, {"group": "المشاركة في الانشطة اللامنهجية", "label": "يساهم في الانشطة المتعلقة بالبيئة التدربية", "weight": 1.5}, {"group": "المشاركة في الانشطة اللامنهجية", "label": "يساهم في الانشطة المتعلقة بالمقرر التدريبي", "weight": 1.0}, {"group": "التعاون والتواصل مع الرؤساء", "label": "يتقبل التوجيهات ويناقشها في حالة عدم وضوحها بشكل جيد", "weight": 1.0}, {"group": "التعاون والتواصل مع الرؤساء", "label": "يبني علاقات جيدة مع الرؤساء لتحسين وتطوير العمل", "weight": 1.0}, {"group": "التعاون والتواصل مع الرؤساء", "label": "يستطيع أ ن يعبر عن نفسه وان يشرح قكرته بشمل جيد", "weight": 1.0}, {"group": "التعاون والتواصل مع الرؤساء", "label": "يمكن الاعتماد عليه للقيام بمهام اخرى", "weight": 1.0}, {"group": "التعاون والتواصل مع الزملاء", "label": "يسعى لايجاد علاقة جيدة مع الجميع", "weight": 1.0}, {"group": "التعاون والتواصل مع الزملاء", "label": "يبادل الخبرات التربوية مع الزملاء", "weight": 1.0}, {"group": "التعاون والتواصل مع الزملاء", "label": "يبادر لتقريب وتعزيز العلاقات الايجابية بين الزملاء", "weight": 1.0}, {"group": "التعاون والتواصل مع الزملاء", "label": "يشارك مع زملائه في القيام باعمال او بأنشطة مشتركة", "weight": 1.0}, {"group": "التعاون والتواصل مع المتدربين", "label": "يكون قدوة حسنة للمتدربين", "weight": 1.0}, {"group": "التعاون والتواصل مع المتدربين", "label": "يعدل بين المتدربين", "weight": 1.0}, {"group": "التعاون والتواصل مع المتدربين", "label": "يصون كرامة المتدربين ويعي حقوقهم", "weight": 0.5}, {"group": "التعاون والتواصل مع المتدربين", "label": "يستثمر أوقات المتدربين بكل مفيد", "weight": 1.0}, {"group": "التعاون والتواصل مع المتدربين", "label": "يتقبل ملاحظات المتدربين", "weight": 1.0}, {"group": "الالتزام بزي العمل", "label": "يلتزم بزي العمل", "weight": 2.0}, {"group": "الالتزام بزي العمل", "label": "يحرص على ظهور بمظهر مرتب ونظيف", "weight": 2.0}, {"group": "الالتزام بمواعيد العمل", "label": "يلتزم بمواعيد العمل الرسمي حضورا  - انصرافا", "weight": 1.5}, {"group": "الالتزام بمواعيد العمل", "label": "يتواجد في مكتبه حسب جدول الساعات المكتبية للقسم", "weight": 1.0}, {"group": "الالتزام بمواعيد العمل", "label": "يحرص على حضور الاجتماعات القسم والمشاركة فيها", "weight": 1.0}, {"group": "الالتزام بمواعيد العمل", "label": "يتقيد بالزمن المخصص للفترات التدربية (بدءأ , انتهاء)", "weight": 1.5}, {"group": "الالتزام بمواعيد العمل", "label": "يتبع الاجراءات الادراية عند الغياب أو مغادرة مقر العمل قبل انتهاء الدوام", "weight": 1.0}, {"group": "انجاز مايطلب منه في الوقت المحدد", "label": "يحرص على انجاز االاعمال الموكلة اليه ف يالوقت المحدد", "weight": 1.5}, {"group": "انجاز مايطلب منه في الوقت المحدد", "label": "يراعي الانظمة واللوائح في انجاز اعماله", "weight": 1.0}, {"group": "انجاز مايطلب منه في الوقت المحدد", "label": "يطور أساليب انجاز الأعمال الموكلة اليه طبقا لمعايير الجودة", "weight": 1.5}], "groups": ["توزيع الخطة التدريبية بشكل مناسب", "تمكن من المادة التدريبة وتحقيق اهدافها ٧ درجات", "تطبيق اسس ومفاهيم التدريب", "استخدام تقنيات واساليب التديب الحديثة", "التقييم باجراءات السلامة", "مراعاة الفروق الفردية بين بدابة الفصل التدريبي", "العناية بصيانة المعدات و اجهزة التدريب", "الاهتمام بالنمو المهني والمعرفي وتطوير الذات", "تنظيم ملف المقرر التدريبي", "تقييم المتدربين حسب الخطة المعتمدة", "المساهمة في التوجيه والإرشاد التدريبي للمتدربين", "مستوى التحصيل المعرفي والمهاري لدى المتدربين", "اعداد ملف الانجاز المهني", "المشاركة في الانشطة اللامنهجية", "التعاون والتواصل مع الرؤساء", "التعاون والتواصل مع الزملاء", "التعاون والتواصل مع المتدربين", "الالتزام بزي العمل", "الالتزام بمواعيد العمل", "انجاز مايطلب منه في الوقت المحدد"], "trainers": ["أجواد صالح عطية الله المجنوني", "أسماء فوزي عليوي الجعيد العتيبي", "أنوار عامر علي الصبحي", "ابتسام محمد عطيه العطوي", "اسماء علي راشد الراشدى", "بدور حمدان جويبر الحربي", "تهاني عبدالعالي عطيةالله اللهيبي", "جميله محمد شهوان المسرحي", "حمده رفيع نامي السلمي", "حنان احمد مبارك احمد", "حنان ذيب عاقل العزيزي المطيري", "رغد صالح حسن المالكي", "رنا عبدالرحمن منصور العوهلي", "رهف عطالله حمود البرقاني", "ريم محمد صديق صدقه قناديلي", "سعاد مشرف هزاع العمري", "سميره حبيب الله هرباي انديجاني", "سوسن حسين سليمان نولي", "شهد يحيى محمد الزهراني", "عبير ناصر الحليفي العتيبي", "فاديه فهد نويشي الكلبي الجهني", "فاطمة حمدان محمد الجهني", "لميس عبدالرحمن ظافر الشهري", "مزنه فريح علي العقلاء", "مشاعل راضي حويتم العتيبي", "ملاك عبدالعزيز محمد العصمي الشهري", "منار صالح عبدالغفور الصواط", "نهى حويكم", "نوره صالح جابر آل زهير الشمراني", "نوف سعيد راشد الصاعدي", "هوازن سالم سعد كيال", "هوازن محمد حميد الطياري"], "totalWeight": 110.5};
+
+let scores = {};
+let currentTrainer = "";
+
+function scoreKey(trainer, group, label){
+  return trainer + "||" + group + "||" + label;
+}
+
+function loadScores(){
+  try{
+    const raw = localStorage.getItem('trainer-evaluation');
+    scores = raw ? JSON.parse(raw) : {};
+  }catch(e){ scores = {}; }
+}
+function saveScores(){
+  try{ localStorage.setItem('trainer-evaluation', JSON.stringify(scores)); }
+  catch(e){ console.error('فشل الحفظ', e); }
+}
+
+function getScore(trainer, group, label){
+  const k = scoreKey(trainer, group, label);
+  return k in scores ? scores[k] : 0;
+}
+const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzrCds6xfATzHAV2w6LBfuwffrs5TZ_ydU4FPOKmqC4-OkzzA54zttI9koCBQThVBLL/exec";
+
+function syncToSheets(payload){
+  try{
+    const qs = Object.keys(payload).map(k=>encodeURIComponent(k)+"="+encodeURIComponent(payload[k])).join("&");
+    fetch(SHEETS_WEBHOOK_URL + "?" + qs, { method: 'GET', mode: 'no-cors' })
+      .catch(()=>{ /* فشل صامت */ });
+  }catch(e){ console.error('فشل المزامنة', e); }
+}
+
+function setScore(trainer, group, label, value, maxWeight){
+  let v = parseFloat(value);
+  if(isNaN(v)) v = 0;
+  if(v < 0) v = 0;
+  if(v > maxWeight) v = maxWeight;
+  scores[scoreKey(trainer, group, label)] = v;
+  saveScores();
+  renderEvalPanel();
+  renderOverview();
+
+  syncToSheets({
+    "__sheet__": "تقييم_المدربات",
+    "المدربة": trainer,
+    "المجموعة": group,
+    "البند": label,
+    "الدرجة من": maxWeight,
+    "الدرجة المُسجّلة": v
+  });
+}
+
+function computeTrainerTotal(trainer){
+  let total = 0;
+  EVAL_DATA.criteria.forEach(c=>{
+    total += getScore(trainer, c.group, c.label);
+  });
+  return total;
+}
+
+function buildTrainerSelect(){
+  const sel = document.getElementById('trainerSelect');
+  sel.innerHTML = EVAL_DATA.trainers.map(t=>`<option value="${t}">${t}</option>`).join('');
+  sel.addEventListener('change', (e)=>{
+    currentTrainer = e.target.value;
+    renderEvalPanel();
+  });
+  currentTrainer = EVAL_DATA.trainers[0] || "";
+  sel.value = currentTrainer;
+}
+
+function renderEvalPanel(){
+  const wrap = document.getElementById('evalPanel');
+  if(!currentTrainer){
+    wrap.innerHTML = '<div class="empty">لا توجد مدربات</div>';
+    return;
+  }
+  const total = computeTrainerTotal(currentTrainer);
+  const scaled100 = EVAL_DATA.totalWeight ? (total/EVAL_DATA.totalWeight)*100 : 0;
+  const pct = Math.round(scaled100);
+  const isLow = pct < 60;
+
+  const groupsHtml = EVAL_DATA.groups.map(g=>{
+    const items = EVAL_DATA.criteria.filter(c=>c.group===g);
+    const groupMax = items.reduce((s,c)=>s+c.weight,0);
+    const groupScore = items.reduce((s,c)=>s+getScore(currentTrainer,c.group,c.label),0);
+    const rows = items.map(c=>{
+      const val = getScore(currentTrainer, c.group, c.label);
+      return `
+        <div class="criteria-row">
+          <span class="label">${c.label} <span class="weight-hint">(من ${c.weight})</span></span>
+          <input type="number" min="0" max="${c.weight}" step="0.5" value="${val}"
+            onchange="setScore('${currentTrainer.replace(/'/g,"\'")}', '${g.replace(/'/g,"\'")}', '${c.label.replace(/'/g,"\'")}', this.value, ${c.weight})">
+        </div>
+      `;
+    }).join('');
+    return `
+      <div class="group-block">
+        <div class="group-title"><span>${g}</span><span class="gsub">${groupScore.toFixed(1)} / ${groupMax}</span></div>
+        ${rows}
+      </div>
+    `;
+  }).join('');
+
+  wrap.innerHTML = `
+    <div class="eval-panel">
+      <div class="eval-header">
+        <span class="name">👤 ${currentTrainer}</span>
+        <span class="eval-total ${isLow?'low':''}">الإجمالي: ${scaled100.toFixed(1)} / 100</span>
+      </div>
+      ${groupsHtml}
+    </div>
+  `;
+}
+
+function renderOverview(){
+  const wrap = document.getElementById('overviewBox');
+  const rows = EVAL_DATA.trainers.map(t=>{
+    const total = computeTrainerTotal(t);
+    const scaled100 = EVAL_DATA.totalWeight ? (total/EVAL_DATA.totalWeight)*100 : 0;
+    const pct = Math.round(scaled100);
+    return {t, scaled100, pct};
+  }).sort((a,b)=>b.pct-a.pct);
+
+  wrap.innerHTML = `
+    <table>
+      <tr><th>المدربة</th><th>الدرجة</th><th>النسبة</th></tr>
+      ${rows.map(r=>`
+        <tr class="eval-row" onclick="selectTrainerFromTable('${r.t.replace(/'/g,"\'")}')">
+          <td>${r.t}</td>
+          <td>${r.scaled100.toFixed(1)} / 100</td>
+          <td>
+            ${r.pct}%
+            <span class="score-bar-track"><span class="score-bar-fill ${r.pct<60?'low':''}" style="width:${r.pct}%"></span></span>
+          </td>
+        </tr>
+      `).join('')}
+    </table>
+  `;
+}
+
+function selectTrainerFromTable(trainer){
+  currentTrainer = trainer;
+  document.getElementById('trainerSelect').value = trainer;
+  renderEvalPanel();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function renderReminderBanner(){
+  const banner = document.getElementById('reminderBanner');
+  let lastExport = null;
+  try{ lastExport = localStorage.getItem('evaluation-last-export'); }catch(e){}
+  if(!lastExport){
+    banner.innerHTML = `<div class="reminder-banner">📤 لم يسبق تصدير نسخة من تقييمات المدربات. يُفضّل تصدير نسخة بشكل دوري.</div>`;
+    return;
+  }
+  const days = Math.floor((new Date() - new Date(lastExport)) / (1000*60*60*24));
+  if(days >= 14){
+    banner.innerHTML = `<div class="reminder-banner">📤 آخر تصدير كان منذ ${days} يومًا — حان وقت تصدير نسخة جديدة.</div>`;
+  } else {
+    banner.innerHTML = '';
+  }
+}
+
+function exportToCSV(){
+  const headers = ['المدربة','المجموعة','البند','الدرجة من','الدرجة المُسجّلة'];
+  const lines = [headers.join(',')];
+
+  EVAL_DATA.trainers.forEach(t=>{
+    EVAL_DATA.criteria.forEach(c=>{
+      const val = getScore(t, c.group, c.label);
+      lines.push([`"${t}"`,`"${c.group}"`,`"${c.label}"`, c.weight, val].join(','));
+    });
+    const total = computeTrainerTotal(t);
+    const scaled100 = EVAL_DATA.totalWeight ? (total/EVAL_DATA.totalWeight)*100 : 0;
+    lines.push([`"${t}"`,`"الإجمالي النهائي"`,`"الدرجة من 100"`, 100, scaled100.toFixed(1)].join(','));
+  });
+
+  const csvContent = "\ufeff" + lines.join('\n');
+  const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'trainer_evaluation_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  try{ localStorage.setItem('evaluation-last-export', new Date().toISOString()); }catch(e){}
+  renderReminderBanner();
+}
+document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+
+document.getElementById('clearDataBtn').addEventListener('click', ()=>{
+  if(confirm('هل أنتِ متأكدة من مسح كل درجات التقييم المحفوظة على هذا الجهاز؟ هذا الإجراء لا يمكن التراجع عنه.')){
+    localStorage.removeItem('trainer-evaluation');
+    localStorage.removeItem('evaluation-last-export');
+    location.reload();
+  }
+});
+
+loadScores();
+buildTrainerSelect();
+renderEvalPanel();
+renderOverview();
+renderReminderBanner();
+</script>
+
+</body>
+</html>
