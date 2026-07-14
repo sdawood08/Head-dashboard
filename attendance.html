@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<style>
+  :root{
+    --bg:#F7F5F1;
+    --panel:#FFFFFF;
+    --panel-2:#F0EDE7;
+    --accent:#C97D2C;
+    --accent-2:#3C8C7A;
+    --text:#1F2A29;
+    --text-dim:#6B7674;
+    --danger:#C0463A;
+    --ok:#3C8C7A;
+    --warn:#C97D2C;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Tahoma','Segoe UI',sans-serif;
+    padding:24px;
+  }
+  h1{font-size:22px;margin:0 0 4px;}
+  .subtitle{color:var(--text-dim);font-size:13px;margin-bottom:20px;}
+
+  .top-row{
+    display:flex;
+    gap:14px;
+    flex-wrap:wrap;
+    margin-bottom:18px;
+    align-items:flex-end;
+  }
+  .field{ display:flex; flex-direction:column; min-width:160px; }
+  .field label{ font-size:11.5px; color:var(--text-dim); margin-bottom:4px; }
+  .field input, .field select{
+    background:var(--panel-2);
+    border:1px solid rgba(0,0,0,0.1);
+    border-radius:8px;
+    padding:9px 12px;
+    color:var(--text);
+    font-size:13px;
+    font-family:inherit;
+  }
+
+  .stats{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .stat{
+    background:var(--panel-2);
+    border-radius:10px;
+    padding:10px 16px;
+    text-align:center;
+    min-width:90px;
+  }
+  .stat .num{font-size:20px;font-weight:bold;color:var(--accent-2);}
+  .stat .lbl{font-size:11px;color:var(--text-dim);margin-top:2px;}
+
+  .lecture-card{
+    background:var(--panel);
+    border-radius:12px;
+    padding:14px 16px;
+    border:1px solid rgba(0,0,0,0.08);
+    box-shadow:0 1px 4px rgba(0,0,0,0.05);
+    margin-bottom:10px;
+    display:grid;
+    grid-template-columns:100px 1fr 200px 160px;
+    gap:14px;
+    align-items:center;
+  }
+  @media (max-width:850px){
+    .lecture-card{ grid-template-columns:1fr; }
+  }
+  .time-box{
+    text-align:center;
+    background:var(--panel-2);
+    border-radius:8px;
+    padding:8px 6px;
+  }
+  .time-box .t{font-size:13px;font-weight:bold;color:var(--accent);}
+  .time-box .lbl{font-size:10px;color:var(--text-dim);margin-top:2px;}
+
+  .lecture-info .course{font-size:14.5px;font-weight:bold;margin-bottom:3px;}
+  .lecture-info .meta{font-size:12px;color:var(--text-dim);}
+  .lecture-info .meta span{margin-left:10px;}
+
+  .status-group{ display:flex; gap:6px; }
+  .status-btn{
+    flex:1;
+    border:1px solid rgba(0,0,0,0.12);
+    background:var(--panel-2);
+    color:var(--text-dim);
+    border-radius:8px;
+    padding:7px 4px;
+    font-size:12px;
+    cursor:pointer;
+    text-align:center;
+  }
+  .status-btn.active.present{ background:rgba(95,184,166,0.25); color:var(--ok); border-color:var(--ok); }
+  .status-btn.active.late{ background:rgba(232,163,61,0.25); color:var(--warn); border-color:var(--warn); }
+  .status-btn.active.absent{ background:rgba(217,105,90,0.25); color:var(--danger); border-color:var(--danger); }
+
+  .notes-input{
+    background:var(--panel-2);
+    border:1px solid rgba(0,0,0,0.1);
+    border-radius:8px;
+    padding:7px 10px;
+    color:var(--text);
+    font-size:12px;
+    font-family:inherit;
+    width:100%;
+  }
+
+  .empty{
+    text-align:center;
+    color:var(--text-dim);
+    padding:40px 10px;
+    font-size:14px;
+  }
+
+  .summary-table{ margin-top:30px; }
+  .summary-table h2{ font-size:15px; color:var(--accent); margin-bottom:10px; }
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th{ text-align:right; color:var(--text-dim); font-weight:normal; border-bottom:1px solid rgba(0,0,0,0.12); padding:6px 4px; }
+  td{ padding:7px 4px; border-bottom:1px solid rgba(255,255,255,0.05); }
+  .badge{padding:2px 8px;border-radius:20px;font-size:11px;display:inline-block;}
+  .badge.ok{background:rgba(95,184,166,0.18);color:var(--ok);}
+  .badge.warn{background:rgba(232,163,61,0.18);color:var(--warn);}
+  .badge.danger{background:rgba(217,105,90,0.18);color:var(--danger);}
+  .reminder-banner{
+    background:#FCEFE3; border:1px solid var(--accent); border-radius:10px;
+    padding:10px 16px; font-size:12.5px; margin-bottom:16px;
+  }
+
+  .zone-section{ margin-bottom:18px; }
+  .zone-header{ display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+  .zone-badge{ background:var(--accent); color:#fff; font-weight:bold; font-size:13px; padding:6px 14px; border-radius:8px; }
+  .zone-count{ font-size:12px; color:var(--text-dim); }
+  .zone-rooms-row{ display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:10px; }
+  .room-group{
+    background:var(--panel); border-radius:12px; padding:10px 12px;
+    border:1px solid rgba(0,0,0,0.08); box-shadow:0 1px 4px rgba(0,0,0,0.05);
+  }
+  .room-group-title{
+    font-size:12.5px; font-weight:bold; color:var(--accent-2); margin-bottom:8px;
+    padding-bottom:6px; border-bottom:1px solid rgba(0,0,0,0.06);
+  }
+  .mini-lecture{ font-size:12px; padding:8px 0; border-bottom:1px solid rgba(0,0,0,0.04); }
+  .mini-lecture:last-child{ border-bottom:none; }
+  .mini-lecture .mt{ color:var(--accent); font-weight:bold; }
+  .mini-lecture .mc{ font-weight:bold; }
+  .mini-lecture .mtr{ color:var(--text-dim); font-size:11px; display:block; margin:3px 0 6px; }
+  .mini-status-group{ display:flex; gap:5px; }
+  .mini-status-btn{
+    flex:1; border:1px solid rgba(0,0,0,0.12); background:var(--panel-2); color:var(--text-dim);
+    border-radius:6px; padding:4px 2px; font-size:11px; cursor:pointer; text-align:center;
+  }
+  .mini-status-btn.active.present{ background:rgba(95,184,166,0.25); color:var(--ok); border-color:var(--ok); }
+  .mini-status-btn.active.late{ background:rgba(232,163,61,0.25); color:var(--warn); border-color:var(--warn); }
+  .mini-status-btn.active.absent{ background:rgba(217,105,90,0.25); color:var(--danger); border-color:var(--danger); }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+  <a href="index.html" style="text-decoration:none;color:var(--accent);font-size:13px;font-weight:bold;">🏠 الصفحة الرئيسية</a>
+  <button id="clearDataBtn" style="background:none;border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:6px 14px;font-size:12px;cursor:pointer;">🗑️ مسح البيانات</button>
+</div>
+
+<div style="display:inline-block;background:rgba(60,140,122,0.12);color:#3C8C7A;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:bold;margin-bottom:10px;">📆 الفصل التدريبي الأول — العام التدريبي 1448هـ</div>
+<h1>📅✅ جدول المحاضرات والحضور والغياب</h1>
+<div class="subtitle">عرض محاضرات اليوم المحدد مع كل الفلاتر، ترتيب المعامل بالساكشن، وتسجيل الحضور والملاحظات</div>
+
+<button id="exportBtn" style="background:var(--accent);color:#13231F;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:bold;cursor:pointer;margin-bottom:18px;">⬇️ تصدير البيانات لـ Power BI (CSV)</button>
+<button id="syncAllBtn" style="background:var(--accent-2);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-size:13px;font-weight:bold;cursor:pointer;margin-bottom:18px;margin-right:8px;">🔄 مزامنة كل السجلات إلى Google Sheets</button>
+<button id="uploadScheduleBtn" style="background:#fff;color:var(--accent-2);border:1px solid var(--accent-2);border-radius:8px;padding:10px 18px;font-size:13px;font-weight:bold;cursor:pointer;margin-bottom:18px;margin-right:8px;">📤 استيراد جدول القسم (Excel/CSV)</button>
+<input type="file" id="scheduleFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+<button id="downloadTemplateBtn" style="background:none;color:var(--text-dim);border:1px dashed rgba(0,0,0,0.2);border-radius:8px;padding:10px 18px;font-size:12.5px;cursor:pointer;margin-bottom:18px;margin-right:8px;">📄 تحميل قالب فارغ</button>
+<span id="scheduleSourceBadge" style="display:inline-block;margin-right:8px;"></span>
+
+<div id="scheduleUploadBanner"></div>
+<div id="reminderBanner"></div>
+
+
+<div class="top-row">
+  <div class="field">
+    <label>التاريخ</label>
+    <input type="date" id="dateInput">
+  </div>
+  <div class="field">
+    <label>اليوم (من الجدول)</label>
+    <select id="dayFilter"></select>
+  </div>
+  <div class="field">
+    <label>بداية الفصل (الأسبوع 1)</label>
+    <input type="date" id="semesterStartInput">
+  </div>
+  <div class="field">
+    <label>القسم</label>
+    <select id="sectionFilter"><option value="">كل الأقسام</option></select>
+  </div>
+  <div class="field">
+    <label>المدربة</label>
+    <select id="trainerFilter"><option value="">كل المدربات</option></select>
+  </div>
+  <div class="field">
+    <label>الأسبوع الحالي</label>
+    <input type="text" id="weekDisplay" readonly style="font-weight:bold;color:var(--accent);">
+  </div>
+  <div class="field">
+    <label>نوع الشعبة</label>
+    <select id="typeFilter"><option value="">كل الأنواع</option></select>
+  </div>
+  <div class="field">
+    <label>القاعة / المعمل</label>
+    <select id="roomFilter"><option value="">كل القاعات</option></select>
+  </div>
+  <div class="field">
+    <label>من الساعة</label>
+    <input type="time" id="timeFromFilter">
+  </div>
+  <div class="field">
+    <label>إلى الساعة</label>
+    <input type="time" id="timeToFilter">
+  </div>
+  <div class="field" style="flex:1;min-width:180px;">
+    <label>بحث</label>
+    <input id="searchInput" placeholder="بحث بالمدربة أو المقرر...">
+  </div>
+</div>
+
+<div style="margin-bottom:16px;">
+  <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--text-dim);">
+    <input type="checkbox" id="groupByZoneToggle" style="accent-color:var(--accent-2);width:16px;height:16px;">
+    🗺️ ترتيب حسب مناطق المعامل (1A, 1B, 1C, 2A...)
+  </label>
+</div>
+
+<div class="stats" id="statsBox"></div>
+
+<div id="lecturesList"></div>
+
+<div class="summary-table">
+  <h2>📊 ملخص عام للسجلات المحفوظة</h2>
+  <div id="weekSummary"></div>
+</div>
+
+<script>
+const DEFAULT_SCHEDULE = [{"day":"الاثنين","time":"1140 - 1000","course":"الخوارزميات والمنطق","courseCode":"برمج-101","room":"3710131018","trainer":"سوسن نولي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الاثنين","time":"0940 - 0800","course":"الخوارزميات والمنطق","courseCode":"برمج-101","room":"3710131018","trainer":"سوسن نولي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الثلاثاء","time":"1140 - 1000","course":"الخوارزميات والمنطق","courseCode":"برمج-101","room":"3710131018","trainer":"سوسن نولي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الثلاثاء","time":"0940 - 0800","course":"الخوارزميات والمنطق","courseCode":"برمج-101","room":"3710131018","trainer":"سوسن نولي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الاثنين","time":"1340 - 1200","course":"الخوارزميات والمنطق","courseCode":"برمج-101","room":"3710122010","trainer":"سوسن نولي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B10_قاعة تدريبية"},{"day":"الاثنين","time":"1540 - 1400","course":"الخوارزميات والمنطق","courseCode":"برمج-101","room":"3710122010","trainer":"سوسن نولي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B10_قاعة تدريبية"},{"day":"الأحد","time":"1520 - 1200","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113003","trainer":"ريم قناديلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C3_معمل حاسب الي"},{"day":"الخميس","time":"1340 - 1200","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710112002","trainer":"ريم قناديلي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B2_قاغة تدريبية"},{"day":"الأربعاء","time":"1120 - 0800","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113003","trainer":"ريم قناديلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C3_معمل حاسب الي"},{"day":"الأحد","time":"1120 - 0800","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113003","trainer":"ريم قناديلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C3_معمل حاسب الي"},{"day":"الخميس","time":"0940 - 0800","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113002","trainer":"ريم قناديلي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c2_قاعة تدريبية"},{"day":"الأربعاء","time":"1520 - 1200","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113003","trainer":"ريم قناديلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C3_معمل حاسب الي"},{"day":"الاثنين","time":"1120 - 0800","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113012","trainer":"فاديه الكلبي الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C12-معمل حاسب آلي"},{"day":"الخميس","time":"0940 - 0800","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710122008","trainer":"فاديه الكلبي الجهني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B8-  قاعة تدريبية"},{"day":"الأحد","time":"1520 - 1200","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113012","trainer":"فاطمه الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C12-معمل حاسب آلي"},{"day":"الخميس","time":"0940 - 0800","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710131013","trainer":"فاطمه الجهني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A13_قاعة تدريبية"},{"day":"الأحد","time":"1120 - 0800","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113012","trainer":"فاديه الكلبي الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C12-معمل حاسب آلي"},{"day":"الأحد","time":"1340 - 1200","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710122007","trainer":"ابتسام العطوي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B7_قاعة تدريبية"},{"day":"الأربعاء","time":"1120 - 0800","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710133017","trainer":"ابتسام العطوي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3c17_ معمل"},{"day":"الأربعاء","time":"1520 - 1200","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113001","trainer":"ابتسام العطوي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c1_ قاعة تدريبية"},{"day":"الاثنين","time":"1340 - 1200","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113001","trainer":"ابتسام العطوي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c1_ قاعة تدريبية"},{"day":"الثلاثاء","time":"1120 - 0800","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113006","trainer":"ابتسام العطوي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C6_معمل حاسب الي"},{"day":"الأحد","time":"1340 - 1200","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710131014","trainer":"فاديه الكلبي الجهني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A14_قاعة تدريبية"},{"day":"الثلاثاء","time":"1120 - 0800","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113012","trainer":"فاديه الكلبي الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C12-معمل حاسب آلي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"أساسيات برمجة الحاسب","courseCode":"برمج-111","room":"3710113012","trainer":"فاديه الكلبي الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C12-معمل حاسب آلي"},{"day":"الثلاثاء","time":"1340 - 1200","course":"مبادئ قواعد البيانات","courseCode":"برمج-121","room":"3710133016","trainer":"سعاد العمري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C16_معمل حاسب"},{"day":"الخميس","time":"0940 - 0800","course":"مبادئ قواعد البيانات","courseCode":"برمج-121","room":"3710132017","trainer":"سعاد العمري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B17_قاعة تدريبية"},{"day":"الاثنين","time":"1340 - 1200","course":"مبادئ قواعد البيانات","courseCode":"برمج-121","room":"3710112006","trainer":"سعاد العمري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B6_معمل حاسب الي"},{"day":"الخميس","time":"1140 - 1000","course":"مبادئ قواعد البيانات","courseCode":"برمج-121","room":"3710112001","trainer":"سعاد العمري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الثلاثاء","time":"0940 - 0800","course":"مبادئ قواعد البيانات","courseCode":"برمج-121","room":"3710133015","trainer":"سعاد العمري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C15_معمل حاسب"},{"day":"الثلاثاء","time":"1140 - 1000","course":"مبادئ قواعد البيانات","courseCode":"برمج-121","room":"3710133015","trainer":"سعاد العمري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C15_معمل حاسب"},{"day":"الخميس","time":"1540 - 1400","course":"مبادئ قواعد البيانات","courseCode":"برمج-121","room":"3710112001","trainer":"هوازن الطياري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الأربعاء","time":"0940 - 0800","course":"مبادئ قواعد البيانات","courseCode":"برمج-121","room":"3710133015","trainer":"هوازن الطياري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C15_معمل حاسب"},{"day":"الثلاثاء","time":"1340 - 1200","course":"مبادئ قواعد البيانات","courseCode":"برمج-121","room":"3710133015","trainer":"هوازن الطياري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C15_معمل حاسب"},{"day":"الخميس","time":"1320 - 1000","course":"مبادئ برمجة صفحات الانترنت","courseCode":"برمج-131","room":"3710131014","trainer":"شهد الزهراني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A14_قاعة تدريبية"},{"day":"الاثنين","time":"1520 - 1200","course":"مبادئ برمجة صفحات الانترنت","courseCode":"برمج-131","room":"3710122011","trainer":"شهد الزهراني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B11_قاعة تدريبية"},{"day":"الخميس","time":"1120 - 0800","course":"مبادئ برمجة صفحات الانترنت","courseCode":"برمج-131","room":"3710112002","trainer":"حنان العزيزي المطيري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B2_قاغة تدريبية"},{"day":"الاثنين","time":"0940 - 0800","course":"مبادئ برمجة صفحات الانترنت","courseCode":"برمج-131","room":"3710113009","trainer":"شهد الزهراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C9-معمل حاسب آلي"},{"day":"الثلاثاء","time":"0940 - 0800","course":"مبادئ برمجة صفحات الانترنت","courseCode":"برمج-131","room":"3710121011","trainer":"شهد الزهراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A11_معمل حاسب الي"},{"day":"الأحد","time":"1340 - 1200","course":"مبادئ برمجة صفحات الانترنت","courseCode":"برمج-131","room":"3710112003","trainer":"شهد الزهراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B3_معمل حاسب الي"},{"day":"الأحد","time":"0940 - 0800","course":"مبادئ برمجة صفحات الانترنت","courseCode":"برمج-131","room":"3710121011","trainer":"شهد الزهراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A11_معمل حاسب الي"},{"day":"الأحد","time":"1340 - 1200","course":"مبادئ برمجة صفحات الانترنت","courseCode":"برمج-131","room":"3710121012","trainer":"حنان العزيزي المطيري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A12_معمل حاسب الي"},{"day":"الأحد","time":"1140 - 1000","course":"مبادئ برمجة صفحات الانترنت","courseCode":"برمج-131","room":"3710113011","trainer":"حنان العزيزي المطيري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C11-معمل حاسب آلي"},{"day":"الخميس","time":"1340 - 1200","course":"برمجة الحاسب","courseCode":"برمج-212","room":"3710111001","trainer":"حمده السلمي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A1_قاعة تدريبية"},{"day":"الثلاثاء","time":"0940 - 0800","course":"برمجة الحاسب","courseCode":"برمج-212","room":"3710132015","trainer":"حمده السلمي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الخميس","time":"1340 - 1200","course":"برمجة الحاسب","courseCode":"برمج-212","room":"3710122012","trainer":"هوازن الطياري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B12_قاعة تدريبية"},{"day":"الأحد","time":"1120 - 0800","course":"برمجة الحاسب","courseCode":"برمج-212","room":"3710133017","trainer":"حمده السلمي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3c17_ معمل"},{"day":"الخميس","time":"1120 - 0800","course":"برمجة الحاسب","courseCode":"برمج-212","room":"3710133016","trainer":"حمده السلمي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C16_معمل حاسب"},{"day":"الاثنين","time":"1120 - 0800","course":"برمجة الحاسب","courseCode":"برمج-212","room":"3710133015","trainer":"حمده السلمي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C15_معمل حاسب"},{"day":"الاثنين","time":"1520 - 1200","course":"برمجة الحاسب","courseCode":"برمج-212","room":"3710133015","trainer":"حمده السلمي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C15_معمل حاسب"},{"day":"الأحد","time":"1120 - 0800","course":"برمجة الحاسب","courseCode":"برمج-212","room":"3710133015","trainer":"هوازن الطياري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C15_معمل حاسب"},{"day":"الخميس","time":"1120 - 0800","course":"برمجة الحاسب","courseCode":"برمج-212","room":"3710133015","trainer":"هوازن الطياري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C15_معمل حاسب"},{"day":"الخميس","time":"1550 - 1500","course":"برمجة قواعد البيانات","courseCode":"برمج-222","room":"3710111002","trainer":"نوره آل زهير الشمراني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الخميس","time":"0850 - 0800","course":"برمجة قواعد البيانات","courseCode":"برمج-222","room":"3710112001","trainer":"نوره آل زهير الشمراني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الخميس","time":"1450 - 1400","course":"برمجة قواعد البيانات","courseCode":"برمج-222","room":"3710122012","trainer":"نوره آل زهير الشمراني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B12_قاعة تدريبية"},{"day":"الأحد","time":"1520 - 1200","course":"برمجة قواعد البيانات","courseCode":"برمج-222","room":"3710133015","trainer":"نوره آل زهير الشمراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C15_معمل حاسب"},{"day":"الثلاثاء","time":"1120 - 0800","course":"برمجة قواعد البيانات","courseCode":"برمج-222","room":"3710133017","trainer":"نوره آل زهير الشمراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3c17_ معمل"},{"day":"الاثنين","time":"1520 - 1200","course":"برمجة قواعد البيانات","courseCode":"برمج-222","room":"3710133017","trainer":"نوره آل زهير الشمراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3c17_ معمل"},{"day":"الاثنين","time":"1120 - 0800","course":"برمجة قواعد البيانات","courseCode":"برمج-222","room":"3710121012","trainer":"نوره آل زهير الشمراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A12_معمل حاسب الي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"برمجة قواعد البيانات","courseCode":"برمج-222","room":"3710123010","trainer":"نوره آل زهير الشمراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2c10 معمل"},{"day":"الأحد","time":"1120 - 0800","course":"برمجة قواعد البيانات","courseCode":"برمج-222","room":"3710112004","trainer":"نوره آل زهير الشمراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B4_معمل حاسب الي"},{"day":"الاثنين","time":"0940 - 0800","course":"برمجة الانترنت","courseCode":"برمج-232","room":"3710113002","trainer":"اجواد المجنوني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c2_قاعة تدريبية"},{"day":"الثلاثاء","time":"1140 - 1000","course":"برمجة الانترنت","courseCode":"برمج-232","room":"3710111002","trainer":"عبير الحليفي العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الاثنين","time":"1340 - 1200","course":"برمجة الانترنت","courseCode":"برمج-232","room":"3710132017","trainer":"عبير الحليفي العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B17_قاعة تدريبية"},{"day":"الثلاثاء","time":"1120 - 0800","course":"برمجة الانترنت","courseCode":"برمج-232","room":"3710112004","trainer":"اجواد المجنوني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B4_معمل حاسب الي"},{"day":"الأحد","time":"1120 - 0800","course":"برمجة الانترنت","courseCode":"برمج-232","room":"3710112006","trainer":"اجواد المجنوني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B6_معمل حاسب الي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"برمجة الانترنت","courseCode":"برمج-232","room":"3710133017","trainer":"عبير الحليفي العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3c17_ معمل"},{"day":"الخميس","time":"1520 - 1200","course":"برمجة الانترنت","courseCode":"برمج-232","room":"3710121012","trainer":"عبير الحليفي العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A12_معمل حاسب الي"},{"day":"الخميس","time":"1120 - 0800","course":"برمجة الانترنت","courseCode":"برمج-232","room":"3710121011","trainer":"عبير الحليفي العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A11_معمل حاسب الي"},{"day":"الأحد","time":"1520 - 1200","course":"برمجة الانترنت","courseCode":"برمج-232","room":"3710113011","trainer":"عبير الحليفي العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C11-معمل حاسب آلي"},{"day":"الأربعاء","time":"1150 - 1100","course":"تقنيات الانترنت المتقدمة","courseCode":"برمج-234","room":"3710122011","trainer":"لميس الشهري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B11_قاعة تدريبية"},{"day":"الاثنين","time":"1650 - 1600","course":"تقنيات الانترنت المتقدمة","courseCode":"برمج-234","room":"3710111002","trainer":"لميس الشهري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الأربعاء","time":"1050 - 1000","course":"تقنيات الانترنت المتقدمة","courseCode":"برمج-234","room":"3710122011","trainer":"لميس الشهري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B11_قاعة تدريبية"},{"day":"الاثنين","time":"1340 - 1200","course":"تقنيات الانترنت المتقدمة","courseCode":"برمج-234","room":"3710113009","trainer":"لميس الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C9-معمل حاسب آلي"},{"day":"الأحد","time":"1340 - 1200","course":"تقنيات الانترنت المتقدمة","courseCode":"برمج-234","room":"3710121011","trainer":"لميس الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A11_معمل حاسب الي"},{"day":"الأربعاء","time":"0940 - 0800","course":"تقنيات الانترنت المتقدمة","courseCode":"برمج-234","room":"3710113009","trainer":"لميس الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C9-معمل حاسب آلي"},{"day":"الأربعاء","time":"1340 - 1200","course":"تقنيات الانترنت المتقدمة","courseCode":"برمج-234","room":"3710113009","trainer":"لميس الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C9-معمل حاسب آلي"},{"day":"الأحد","time":"0940 - 0800","course":"تقنيات الانترنت المتقدمة","courseCode":"برمج-234","room":"3710121009","trainer":"لميس الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A9_معمل توجيه وتحويل"},{"day":"الأحد","time":"1140 - 1000","course":"تقنيات الانترنت المتقدمة","courseCode":"برمج-234","room":"3710121009","trainer":"لميس الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A9_معمل توجيه وتحويل"},{"day":"الثلاثاء","time":"1340 - 1200","course":"برمجة الأجهزة الذكية","courseCode":"برمج-251","room":"3710122010","trainer":"نوف الصاعدي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B10_قاعة تدريبية"},{"day":"الثلاثاء","time":"1540 - 1400","course":"برمجة الأجهزة الذكية","courseCode":"برمج-251","room":"3710112001","trainer":"نوف الصاعدي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الاثنين","time":"1140 - 1000","course":"برمجة الأجهزة الذكية","courseCode":"برمج-251","room":"3710122012","trainer":"ابتسام العطوي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B12_قاعة تدريبية"},{"day":"الأحد","time":"1520 - 1200","course":"برمجة الأجهزة الذكية","courseCode":"برمج-251","room":"3710133017","trainer":"نوف الصاعدي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3c17_ معمل"},{"day":"الاثنين","time":"1520 - 1200","course":"برمجة الأجهزة الذكية","courseCode":"برمج-251","room":"3710121009","trainer":"نوف الصاعدي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A9_معمل توجيه وتحويل"},{"day":"الأربعاء","time":"1520 - 1200","course":"برمجة الأجهزة الذكية","courseCode":"برمج-251","room":"3710123010","trainer":"نوف الصاعدي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2c10 معمل"},{"day":"الأربعاء","time":"1120 - 0800","course":"برمجة الأجهزة الذكية","courseCode":"برمج-251","room":"3710123010","trainer":"نوف الصاعدي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2c10 معمل"},{"day":"الخميس","time":"1520 - 1200","course":"برمجة الأجهزة الذكية","courseCode":"برمج-251","room":"3710121010","trainer":"ابتسام العطوي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الخميس","time":"1120 - 0800","course":"برمجة الأجهزة الذكية","courseCode":"برمج-251","room":"3710113011","trainer":"ابتسام العطوي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C11-معمل حاسب آلي"},{"day":"الأربعاء","time":"1050 - 1000","course":"مشروع","courseCode":"برمج-295","room":"3710131013","trainer":"مزنه العقلاء","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A13_قاعة تدريبية"},{"day":"الاثنين","time":"0850 - 0800","course":"مشروع","courseCode":"برمج-295","room":"3710131013","trainer":"مزنه العقلاء","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A13_قاعة تدريبية"},{"day":"الأحد","time":"1450 - 1400","course":"مشروع","courseCode":"برمج-295","room":"3710131013","trainer":"مزنه العقلاء","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A13_قاعة تدريبية"},{"day":"الأربعاء","time":"0940 - 0800","course":"مشروع","courseCode":"برمج-295","room":"3710131013","trainer":"مزنه العقلاء","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A13_قاعة تدريبية"},{"day":"الاثنين","time":"1040 - 0900","course":"مشروع","courseCode":"برمج-295","room":"3710131013","trainer":"مزنه العقلاء","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A13_قاعة تدريبية"},{"day":"الأحد","time":"1340 - 1200","course":"مشروع","courseCode":"برمج-295","room":"3710131013","trainer":"مزنه العقلاء","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A13_قاعة تدريبية"},{"day":"الثلاثاء","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"برمج-299","room":"3710121010","trainer":"انوار الصبحي","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الثلاثاء","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"برمج-299","room":"3710131018","trainer":"سوسن نولي","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الأربعاء","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"برمج-299","room":"3710133016","trainer":"فاطمه الجهني","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C16_معمل حاسب"},{"day":"الأحد","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"برمج-299","room":"3710111001","trainer":"رغد المالكي","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A1_قاعة تدريبية"},{"day":"الأربعاء","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"برمج-299","room":"3710131014","trainer":"لميس الشهري","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A14_قاعة تدريبية"},{"day":"الخميس","time":"0950 - 0900","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710122007","trainer":"ملاك العصمي الشهري","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B7_قاعة تدريبية"},{"day":"الخميس","time":"1250 - 1200","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710131016","trainer":"ملاك العصمي الشهري","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A16_ورشة صيانة حاسب الي"},{"day":"الأربعاء","time":"1520 - 1200","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710133017","trainer":"ملاك العصمي الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3c17_ معمل"},{"day":"الاثنين","time":"1120 - 0800","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710113006","trainer":"ملاك العصمي الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C6_معمل حاسب الي"},{"day":"الأحد","time":"1120 - 0800","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710112005","trainer":"ملاك العصمي الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B5_معمل حاسب الي"},{"day":"الأربعاء","time":"1120 - 0800","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710121009","trainer":"ملاك العصمي الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A9_معمل توجيه وتحويل"},{"day":"الأربعاء","time":"1650 - 1600","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710111002","trainer":"هوازن كيال","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الأربعاء","time":"1520 - 1200","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710113011","trainer":"هوازن كيال","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C11-معمل حاسب آلي"},{"day":"الأربعاء","time":"1120 - 0800","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710113011","trainer":"هوازن كيال","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C11-معمل حاسب آلي"},{"day":"الخميس","time":"0950 - 0900","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710112001","trainer":"بدور الحربي","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الأحد","time":"1520 - 1200","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710133016","trainer":"بدور الحربي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C16_معمل حاسب"},{"day":"الأحد","time":"1120 - 0800","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710133016","trainer":"بدور الحربي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C16_معمل حاسب"},{"day":"الأربعاء","time":"1650 - 1600","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710132017","trainer":"فاديه الكلبي الجهني","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B17_قاعة تدريبية"},{"day":"الأربعاء","time":"1520 - 1200","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710113012","trainer":"فاديه الكلبي الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C12-معمل حاسب آلي"},{"day":"الأربعاء","time":"1120 - 0800","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710113012","trainer":"فاديه الكلبي الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C12-معمل حاسب آلي"},{"day":"الخميس","time":"1050 - 1000","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710111001","trainer":"نوره آل زهير الشمراني","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A1_قاعة تدريبية"},{"day":"الأربعاء","time":"1520 - 1200","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710113006","trainer":"نوره آل زهير الشمراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C6_معمل حاسب الي"},{"day":"الأربعاء","time":"1120 - 0800","course":"  تجميع الحاسب وتشغيله","courseCode":"حاسب-121","room":"3710121011","trainer":"نوره آل زهير الشمراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A11_معمل حاسب الي"},{"day":"الأحد","time":"1340 - 1200","course":"دوائر رقمية","courseCode":"داعم-111","room":"3710131015","trainer":"حمده السلمي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A15_ورشة تأهلية"},{"day":"الأربعاء","time":"1340 - 1200","course":"دوائر رقمية","courseCode":"داعم-111","room":"3710131015","trainer":"حمده السلمي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A15_ورشة تأهلية"},{"day":"الأربعاء","time":"0940 - 0800","course":"دوائر رقمية","courseCode":"داعم-111","room":"3710131016","trainer":"رغد المالكي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A16_ورشة صيانة حاسب الي"},{"day":"الأحد","time":"1540 - 1400","course":"دوائر رقمية","courseCode":"داعم-111","room":"3710131015","trainer":"حمده السلمي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A15_ورشة تأهلية"},{"day":"الأربعاء","time":"1540 - 1400","course":"دوائر رقمية","courseCode":"داعم-111","room":"3710131015","trainer":"حمده السلمي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A15_ورشة تأهلية"},{"day":"الأربعاء","time":"1140 - 1000","course":"دوائر رقمية","courseCode":"داعم-111","room":"3710131016","trainer":"رغد المالكي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A16_ورشة صيانة حاسب الي"},{"day":"الأحد","time":"0940 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710113001","trainer":"اسماء الراشدى","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c1_ قاعة تدريبية"},{"day":"الاثنين","time":"1140 - 1000","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710122010","trainer":"اسماء الراشدى","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B10_قاعة تدريبية"},{"day":"الخميس","time":"1440 - 1300","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710122011","trainer":"منار الصواط","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B11_قاعة تدريبية"},{"day":"الأربعاء","time":"1520 - 1200","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112006","trainer":"اسماء الراشدى","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B6_معمل حاسب الي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112005","trainer":"اسماء الراشدى","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B5_معمل حاسب الي"},{"day":"الثلاثاء","time":"1120 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112006","trainer":"اسماء الراشدى","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B6_معمل حاسب الي"},{"day":"الأربعاء","time":"1120 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710121010","trainer":"اسماء الراشدى","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الاثنين","time":"1120 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112005","trainer":"منار الصواط","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B5_معمل حاسب الي"},{"day":"الثلاثاء","time":"1120 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112003","trainer":"منار الصواط","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B3_معمل حاسب الي"},{"day":"الثلاثاء","time":"1340 - 1200","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710122009","trainer":"سوسن نولي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B9_قاعة تدريبية"},{"day":"الأربعاء","time":"1120 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112006","trainer":"سوسن نولي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B6_معمل حاسب الي"},{"day":"الأحد","time":"1140 - 1000","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710122012","trainer":"منار الصواط","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B12_قاعة تدريبية"},{"day":"الخميس","time":"1120 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112006","trainer":"منار الصواط","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B6_معمل حاسب الي"},{"day":"الخميس","time":"1120 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112004","trainer":"سوسن نولي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B4_معمل حاسب الي"},{"day":"الاثنين","time":"1120 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112004","trainer":"نهى حويكم","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B4_معمل حاسب الي"},{"day":"الثلاثاء","time":"1140 - 1000","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710113002","trainer":"نهى حويكم","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c2_قاعة تدريبية"},{"day":"الأحد","time":"1520 - 1200","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112005","trainer":"نهى حويكم","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B5_معمل حاسب الي"},{"day":"الأحد","time":"1120 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112003","trainer":"نهى حويكم","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B3_معمل حاسب الي"},{"day":"الثلاثاء","time":"0940 - 0800","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112002","trainer":"نهى حويكم","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B2_قاغة تدريبية"},{"day":"الاثنين","time":"1520 - 1200","course":"نظم التشغيل -1","courseCode":"داعم-151","room":"3710112003","trainer":"نهى حويكم","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B3_معمل حاسب الي"},{"day":"الاثنين","time":"1120 - 0800","course":"مهارات الدعم الفني","courseCode":"داعم-221","room":"3710131016","trainer":"هوازن الطياري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A16_ورشة صيانة حاسب الي"},{"day":"الأحد","time":"1520 - 1200","course":"مهارات الدعم الفني","courseCode":"داعم-221","room":"3710131016","trainer":"هوازن الطياري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A16_ورشة صيانة حاسب الي"},{"day":"الاثنين","time":"1520 - 1200","course":"مهارات الدعم الفني","courseCode":"داعم-221","room":"3710131016","trainer":"هوازن الطياري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A16_ورشة صيانة حاسب الي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"مهارات الدعم الفني","courseCode":"داعم-221","room":"3710131015","trainer":"ابتسام العطوي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A15_ورشة تأهلية"},{"day":"الأحد","time":"1120 - 0800","course":"مهارات الدعم الفني","courseCode":"داعم-221","room":"3710131016","trainer":"عبير الحليفي العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A16_ورشة صيانة حاسب الي"},{"day":"الأربعاء","time":"1520 - 1200","course":"مهارات الدعم الفني","courseCode":"داعم-221","room":"3710131016","trainer":"عبير الحليفي العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A16_ورشة صيانة حاسب الي"},{"day":"الثلاثاء","time":"1120 - 0800","course":"مهارات الدعم الفني","courseCode":"داعم-221","room":"3710131016","trainer":"هوازن الطياري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A16_ورشة صيانة حاسب الي"},{"day":"الخميس","time":"1240 - 1100","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113002","trainer":"رهف البرقاني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c2_قاعة تدريبية"},{"day":"الخميس","time":"1340 - 1200","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710111002","trainer":"بدور الحربي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الخميس","time":"1140 - 1000","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710122008","trainer":"بدور الحربي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B8-  قاعة تدريبية"},{"day":"الأحد","time":"1520 - 1200","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113005","trainer":"رهف البرقاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C5_معمل حاسب الي"},{"day":"الاثنين","time":"1520 - 1200","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113003","trainer":"رهف البرقاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C3_معمل حاسب الي"},{"day":"الاثنين","time":"1520 - 1200","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113005","trainer":"بدور الحربي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C5_معمل حاسب الي"},{"day":"الأربعاء","time":"1520 - 1200","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113005","trainer":"بدور الحربي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C5_معمل حاسب الي"},{"day":"الاثنين","time":"1120 - 0800","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710121009","trainer":"بدور الحربي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A9_معمل توجيه وتحويل"},{"day":"الأربعاء","time":"1120 - 0800","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113004","trainer":"بدور الحربي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C4_معمل حاسب الي"},{"day":"الثلاثاء","time":"1120 - 0800","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113003","trainer":"رهف البرقاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C3_معمل حاسب الي"},{"day":"الاثنين","time":"1140 - 1000","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113002","trainer":"رهف البرقاني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c2_قاعة تدريبية"},{"day":"الخميس","time":"0940 - 0800","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710132018","trainer":"هوازن كيال","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B18_فاعة تدريبية"},{"day":"الخميس","time":"1140 - 1000","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710122007","trainer":"هوازن كيال","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B7_قاعة تدريبية"},{"day":"الاثنين","time":"1540 - 1400","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710131014","trainer":"جميله المسرحي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A14_قاعة تدريبية"},{"day":"الثلاثاء","time":"1120 - 0800","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113011","trainer":"هوازن كيال","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C11-معمل حاسب آلي"},{"day":"الاثنين","time":"1520 - 1200","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113011","trainer":"هوازن كيال","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C11-معمل حاسب آلي"},{"day":"الاثنين","time":"1120 - 0800","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113011","trainer":"هوازن كيال","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C11-معمل حاسب آلي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710113011","trainer":"هوازن كيال","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C11-معمل حاسب آلي"},{"day":"الأربعاء","time":"1120 - 0800","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710121012","trainer":"جميله المسرحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A12_معمل حاسب الي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"نظم التشغيل -2","courseCode":"داعم-252","room":"3710121010","trainer":"جميله المسرحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الاثنين","time":"1050 - 1000","course":"مشروع","courseCode":"داعم-295","room":"3710132015","trainer":"جميله المسرحي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الأحد","time":"1050 - 1000","course":"مشروع","courseCode":"داعم-295","room":"3710132015","trainer":"جميله المسرحي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الأحد","time":"1450 - 1400","course":"مشروع","courseCode":"داعم-295","room":"3710132015","trainer":"جميله المسرحي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الاثنين","time":"0940 - 0800","course":"مشروع","courseCode":"داعم-295","room":"3710132015","trainer":"جميله المسرحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الأحد","time":"0940 - 0800","course":"مشروع","courseCode":"داعم-295","room":"3710132015","trainer":"جميله المسرحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الأحد","time":"1340 - 1200","course":"مشروع","courseCode":"داعم-295","room":"3710132015","trainer":"جميله المسرحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الخميس","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"داعم-299","room":"3710112006","trainer":"فاديه الكلبي الجهني","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B6_معمل حاسب الي"},{"day":"الأربعاء","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"داعم-299","room":"3710112001","trainer":"عبير الحليفي العتيبي","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الثلاثاء","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"داعم-299","room":"3710111001","trainer":"ملاك العصمي الشهري","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A1_قاعة تدريبية"},{"day":"الثلاثاء","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"داعم-299","room":"3710111003","trainer":"اجواد المجنوني","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الاثنين","time":"1250 - 1200","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الاثنين","time":"1440 - 1300","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الخميس","time":"1050 - 1000","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الأحد","time":"1050 - 1000","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الخميس","time":"0940 - 0800","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الأحد","time":"0940 - 0800","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الثلاثاء","time":"1450 - 1400","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الأحد","time":"1450 - 1400","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الأربعاء","time":"1350 - 1300","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الثلاثاء","time":"1340 - 1200","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الأحد","time":"1340 - 1200","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الأربعاء","time":"1240 - 1100","course":"ريادة اعمال الحاسب وتقنية المع","courseCode":"رياد-212","room":"3710131018","trainer":"سميره انديجاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A18_معمل حاسب الي"},{"day":"الأحد","time":"2230 - 2000","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710122007","trainer":"تهاني اللهيبي","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B7_قاعة تدريبية"},{"day":"الأحد","time":"1830 - 1600","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710111002","trainer":"تهاني اللهيبي","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الثلاثاء","time":"2230 - 2000","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710111002","trainer":"تهاني اللهيبي","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الثلاثاء","time":"1140 - 1000","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710121010","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الاثنين","time":"1340 - 1200","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710123010","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2c10 معمل"},{"day":"الأربعاء","time":"1140 - 1000","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710113005","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C5_معمل حاسب الي"},{"day":"الأربعاء","time":"0940 - 0800","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710112003","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B3_معمل حاسب الي"},{"day":"الاثنين","time":"0940 - 0800","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710112003","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B3_معمل حاسب الي"},{"day":"الأربعاء","time":"1340 - 1200","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710112004","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B4_معمل حاسب الي"},{"day":"الأحد","time":"2230 - 2000","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710112001","trainer":"نوف الصاعدي","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الاثنين","time":"2230 - 2000","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710111002","trainer":"نوف الصاعدي","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الأربعاء","time":"2230 - 2000","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710111002","trainer":"نوف الصاعدي","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الخميس","time":"0940 - 0800","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710113006","trainer":"نوف الصاعدي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C6_معمل حاسب الي"},{"day":"الخميس","time":"1140 - 1000","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710113005","trainer":"نوف الصاعدي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C5_معمل حاسب الي"},{"day":"الثلاثاء","time":"1140 - 1000","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710112005","trainer":"نوف الصاعدي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B5_معمل حاسب الي"},{"day":"الثلاثاء","time":"0940 - 0800","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710113009","trainer":"نوف الصاعدي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C9-معمل حاسب آلي"},{"day":"الاثنين","time":"0940 - 0800","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710121011","trainer":"نوف الصاعدي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A11_معمل حاسب الي"},{"day":"الاثنين","time":"1140 - 1000","course":"مبادئ شبكات الحاسب","courseCode":"شبكا-111","room":"3710121011","trainer":"نوف الصاعدي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A11_معمل حاسب الي"},{"day":"الثلاثاء","time":"1120 - 0800","course":"التوجيه والتحويل -1","courseCode":"شبكا-121","room":"3710133016","trainer":"رنا العوهلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C16_معمل حاسب"},{"day":"الأربعاء","time":"1340 - 1200","course":"التوجيه والتحويل -1","courseCode":"شبكا-121","room":"3710122012","trainer":"رنا العوهلي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B12_قاعة تدريبية"},{"day":"الاثنين","time":"1520 - 1200","course":"التوجيه والتحويل -1","courseCode":"شبكا-121","room":"3710133016","trainer":"رنا العوهلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C16_معمل حاسب"},{"day":"الأربعاء","time":"1520 - 1200","course":"التوجيه والتحويل -1","courseCode":"شبكا-121","room":"3710121010","trainer":"سعاد العمري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الخميس","time":"1340 - 1200","course":"التوجيه والتحويل -1","courseCode":"شبكا-121","room":"3710122008","trainer":"سعاد العمري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B8-  قاعة تدريبية"},{"day":"الاثنين","time":"1120 - 0800","course":"التوجيه والتحويل -1","courseCode":"شبكا-121","room":"3710121010","trainer":"سعاد العمري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الأحد","time":"1520 - 1200","course":"التوجيه والتحويل -1","courseCode":"شبكا-121","room":"3710121010","trainer":"سعاد العمري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الأربعاء","time":"0940 - 0800","course":"التوجيه والتحويل -1","courseCode":"شبكا-121","room":"3710132018","trainer":"سعاد العمري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B18_فاعة تدريبية"},{"day":"الأحد","time":"1120 - 0800","course":"التوجيه والتحويل -1","courseCode":"شبكا-121","room":"3710121010","trainer":"سعاد العمري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الخميس","time":"1140 - 1000","course":"مقدمة في أمن الشبكات","courseCode":"شبكا-231","room":"3710132015","trainer":"رنا العوهلي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الخميس","time":"0940 - 0800","course":"مقدمة في أمن الشبكات","courseCode":"شبكا-231","room":"3710122012","trainer":"رنا العوهلي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B12_قاعة تدريبية"},{"day":"الخميس","time":"1340 - 1200","course":"مقدمة في أمن الشبكات","courseCode":"شبكا-231","room":"3710132015","trainer":"رنا العوهلي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الأحد","time":"1340 - 1200","course":"مقدمة في أمن الشبكات","courseCode":"شبكا-231","room":"3710113009","trainer":"رنا العوهلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C9-معمل حاسب آلي"},{"day":"الثلاثاء","time":"1340 - 1200","course":"مقدمة في أمن الشبكات","courseCode":"شبكا-231","room":"3710113006","trainer":"رنا العوهلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C6_معمل حاسب الي"},{"day":"الأربعاء","time":"0940 - 0800","course":"مقدمة في أمن الشبكات","courseCode":"شبكا-231","room":"3710113006","trainer":"رنا العوهلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C6_معمل حاسب الي"},{"day":"الأربعاء","time":"1140 - 1000","course":"مقدمة في أمن الشبكات","courseCode":"شبكا-231","room":"3710113006","trainer":"رنا العوهلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C6_معمل حاسب الي"},{"day":"الأحد","time":"1140 - 1000","course":"مقدمة في أمن الشبكات","courseCode":"شبكا-231","room":"3710113009","trainer":"رنا العوهلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C9-معمل حاسب آلي"},{"day":"الأحد","time":"0940 - 0800","course":"مقدمة في أمن الشبكات","courseCode":"شبكا-231","room":"3710113009","trainer":"رنا العوهلي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C9-معمل حاسب آلي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"معالجة الصوت الرقمي","courseCode":"ملتي-121","room":"3710111004","trainer":"حنان العزيزي المطيري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A4"},{"day":"الأربعاء","time":"1520 - 1200","course":"معالجة الصوت الرقمي","courseCode":"ملتي-121","room":"3710111006","trainer":"حنان العزيزي المطيري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A6_معمل حاسب الي"},{"day":"الثلاثاء","time":"1120 - 0800","course":"معالجة الصوت الرقمي","courseCode":"ملتي-121","room":"3710113004","trainer":"حنان العزيزي المطيري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C4_معمل حاسب الي"},{"day":"الأربعاء","time":"1120 - 0800","course":"معالجة الصوت الرقمي","courseCode":"ملتي-121","room":"3710111005","trainer":"حنان العزيزي المطيري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A5"},{"day":"الأربعاء","time":"1120 - 0800","course":"معالجة الصوت الرقمي","courseCode":"ملتي-121","room":"3710111004","trainer":"اجواد المجنوني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A4"},{"day":"الأربعاء","time":"1520 - 1200","course":"معالجة الصوت الرقمي","courseCode":"ملتي-121","room":"3710111004","trainer":"اجواد المجنوني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A4"},{"day":"الثلاثاء","time":"1120 - 0800","course":"معالجة الفيديو الرقمي-1","courseCode":"ملتي-131","room":"3710111005","trainer":"مزنه العقلاء","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A5"},{"day":"الأحد","time":"1120 - 0800","course":"معالجة الفيديو الرقمي-1","courseCode":"ملتي-131","room":"3710111005","trainer":"مزنه العقلاء","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A5"},{"day":"الثلاثاء","time":"1520 - 1200","course":"معالجة الفيديو الرقمي-1","courseCode":"ملتي-131","room":"3710111005","trainer":"مزنه العقلاء","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A5"},{"day":"الخميس","time":"1120 - 0800","course":"معالجة الفيديو الرقمي-1","courseCode":"ملتي-131","room":"3710111005","trainer":"مزنه العقلاء","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A5"},{"day":"الخميس","time":"1340 - 1200","course":"معالجة الفيديو الرقمي-1","courseCode":"ملتي-131","room":"3710131013","trainer":"مزنه العقلاء","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A13_قاعة تدريبية"},{"day":"الاثنين","time":"1340 - 1200","course":"معالجة الفيديو الرقمي-1","courseCode":"ملتي-131","room":"3710132018","trainer":"مزنه العقلاء","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B18_فاعة تدريبية"},{"day":"الاثنين","time":"1120 - 0800","course":"التصميم المرئي-1","courseCode":"ملتي-141","room":"3710111005","trainer":"مشاعل العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A5"},{"day":"الخميس","time":"1520 - 1200","course":"التصميم المرئي-1","courseCode":"ملتي-141","room":"3710111004","trainer":"مشاعل العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A4"},{"day":"الأحد","time":"1120 - 0800","course":"التصميم المرئي-1","courseCode":"ملتي-141","room":"3710111003","trainer":"انوار الصبحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الأحد","time":"1520 - 1200","course":"التصميم المرئي-1","courseCode":"ملتي-141","room":"3710111003","trainer":"انوار الصبحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الاثنين","time":"1120 - 0800","course":"التصميم المرئي-1","courseCode":"ملتي-141","room":"3710111006","trainer":"انوار الصبحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A6_معمل حاسب الي"},{"day":"الاثنين","time":"1520 - 1200","course":"التصميم المرئي-1","courseCode":"ملتي-141","room":"3710111005","trainer":"انوار الصبحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A5"},{"day":"الثلاثاء","time":"0940 - 0800","course":"التصميم المرئي-1","courseCode":"ملتي-141","room":"3710113002","trainer":"مشاعل العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c2_قاعة تدريبية"},{"day":"الأربعاء","time":"0940 - 0800","course":"التصميم المرئي-1","courseCode":"ملتي-141","room":"3710112001","trainer":"انوار الصبحي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الأربعاء","time":"1340 - 1200","course":"التصميم المرئي-1","courseCode":"ملتي-141","room":"3710122007","trainer":"انوار الصبحي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B7_قاعة تدريبية"},{"day":"الأحد","time":"1540 - 1400","course":"معالجة الفيديو الرقمي-2","courseCode":"ملتي-232","room":"3710112002","trainer":"تهاني اللهيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B2_قاغة تدريبية"},{"day":"الثلاثاء","time":"1520 - 1200","course":"معالجة الفيديو الرقمي-2","courseCode":"ملتي-232","room":"3710111003","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الأحد","time":"1120 - 0800","course":"معالجة الفيديو الرقمي-2","courseCode":"ملتي-232","room":"3710111006","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A6_معمل حاسب الي"},{"day":"الثلاثاء","time":"1340 - 1200","course":"معالجة الفيديو الرقمي-2","courseCode":"ملتي-232","room":"3710112002","trainer":"ملاك العصمي الشهري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B2_قاغة تدريبية"},{"day":"الخميس","time":"1140 - 1000","course":"معالجة الفيديو الرقمي-2","courseCode":"ملتي-232","room":"3710132018","trainer":"ملاك العصمي الشهري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B18_فاعة تدريبية"},{"day":"الاثنين","time":"1520 - 1200","course":"معالجة الفيديو الرقمي-2","courseCode":"ملتي-232","room":"3710111006","trainer":"ملاك العصمي الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A6_معمل حاسب الي"},{"day":"الأحد","time":"1520 - 1200","course":"معالجة الفيديو الرقمي-2","courseCode":"ملتي-232","room":"3710111004","trainer":"ملاك العصمي الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A4"},{"day":"الثلاثاء","time":"1120 - 0800","course":"معالجة الفيديو الرقمي-2","courseCode":"ملتي-232","room":"3710111004","trainer":"ملاك العصمي الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A4"},{"day":"الخميس","time":"1540 - 1400","course":"التصميم المرئي-2","courseCode":"ملتي-242","room":"3710132018","trainer":"جميله المسرحي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B18_فاعة تدريبية"},{"day":"الثلاثاء","time":"1120 - 0800","course":"التصميم المرئي-2","courseCode":"ملتي-242","room":"3710111006","trainer":"جميله المسرحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A6_معمل حاسب الي"},{"day":"الخميس","time":"1120 - 0800","course":"التصميم المرئي-2","courseCode":"ملتي-242","room":"3710111006","trainer":"جميله المسرحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A6_معمل حاسب الي"},{"day":"الثلاثاء","time":"1140 - 1000","course":"التصميم المرئي-2","courseCode":"ملتي-242","room":"3710122012","trainer":"مشاعل العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B12_قاعة تدريبية"},{"day":"الأربعاء","time":"1340 - 1200","course":"التصميم المرئي-2","courseCode":"ملتي-242","room":"3710132017","trainer":"مشاعل العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B17_قاعة تدريبية"},{"day":"الأربعاء","time":"1120 - 0800","course":"التصميم المرئي-2","courseCode":"ملتي-242","room":"3710111006","trainer":"مشاعل العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A6_معمل حاسب الي"},{"day":"الأحد","time":"1120 - 0800","course":"التصميم المرئي-2","courseCode":"ملتي-242","room":"3710111004","trainer":"مشاعل العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A4"},{"day":"الثلاثاء","time":"1520 - 1200","course":"التصميم المرئي-2","courseCode":"ملتي-242","room":"3710111006","trainer":"مشاعل العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A6_معمل حاسب الي"},{"day":"الخميس","time":"1340 - 1200","course":"التصميم الرقمي","courseCode":"ملتي-251","room":"3710132017","trainer":"أسماء العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B17_قاعة تدريبية"},{"day":"الاثنين","time":"1120 - 0800","course":"التصميم الرقمي","courseCode":"ملتي-251","room":"3710111003","trainer":"أسماء العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الأربعاء","time":"1120 - 0800","course":"التصميم الرقمي","courseCode":"ملتي-251","room":"3710111003","trainer":"أسماء العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الثلاثاء","time":"0940 - 0800","course":"التصميم الرقمي","courseCode":"ملتي-251","room":"3710122010","trainer":"أسماء العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B10_قاعة تدريبية"},{"day":"الخميس","time":"0940 - 0800","course":"التصميم الرقمي","courseCode":"ملتي-251","room":"3710113001","trainer":"مشاعل العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c1_ قاعة تدريبية"},{"day":"الأربعاء","time":"1520 - 1200","course":"التصميم الرقمي","courseCode":"ملتي-251","room":"3710111003","trainer":"أسماء العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الاثنين","time":"1520 - 1200","course":"التصميم الرقمي","courseCode":"ملتي-251","room":"3710111003","trainer":"أسماء العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الأحد","time":"1520 - 1200","course":"التصميم الرقمي","courseCode":"ملتي-251","room":"3710111006","trainer":"مشاعل العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A6_معمل حاسب الي"},{"day":"الاثنين","time":"1540 - 1400","course":"التصميم التفاعلي","courseCode":"ملتي-261","room":"3710131015","trainer":"رغد المالكي","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A15_ورشة تأهلية"},{"day":"الثلاثاء","time":"1140 - 1000","course":"التصميم التفاعلي","courseCode":"ملتي-261","room":"3710112001","trainer":"رغد المالكي","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الأحد","time":"0940 - 0800","course":"التصميم التفاعلي","courseCode":"ملتي-261","room":"3710112001","trainer":"سوسن نولي","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الخميس","time":"1520 - 1200","course":"التصميم التفاعلي","courseCode":"ملتي-261","room":"3710111005","trainer":"رغد المالكي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A5"},{"day":"الأحد","time":"1520 - 1200","course":"التصميم التفاعلي","courseCode":"ملتي-261","room":"3710111005","trainer":"رغد المالكي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A5"},{"day":"الخميس","time":"1120 - 0800","course":"التصميم التفاعلي","courseCode":"ملتي-261","room":"3710111004","trainer":"رغد المالكي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A4"},{"day":"الخميس","time":"1520 - 1200","course":"التصميم التفاعلي","courseCode":"ملتي-261","room":"3710111006","trainer":"سوسن نولي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A6_معمل حاسب الي"},{"day":"الأربعاء","time":"1520 - 1200","course":"التصميم التفاعلي","courseCode":"ملتي-261","room":"3710111005","trainer":"سوسن نولي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A5"},{"day":"الثلاثاء","time":"1250 - 1200","course":"النشر الالكتروني","courseCode":"ملتي-271","room":"3710111001","trainer":"انوار الصبحي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A1_قاعة تدريبية"},{"day":"الأربعاء","time":"1050 - 1000","course":"النشر الالكتروني","courseCode":"ملتي-271","room":"3710111001","trainer":"انوار الصبحي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A1_قاعة تدريبية"},{"day":"الخميس","time":"1450 - 1400","course":"النشر الالكتروني","courseCode":"ملتي-271","room":"3710111002","trainer":"انوار الصبحي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الخميس","time":"0940 - 0800","course":"النشر الالكتروني","courseCode":"ملتي-271","room":"3710111003","trainer":"انوار الصبحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الخميس","time":"1140 - 1000","course":"النشر الالكتروني","courseCode":"ملتي-271","room":"3710111003","trainer":"انوار الصبحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الثلاثاء","time":"0940 - 0800","course":"النشر الالكتروني","courseCode":"ملتي-271","room":"3710111003","trainer":"انوار الصبحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الثلاثاء","time":"1140 - 1000","course":"النشر الالكتروني","courseCode":"ملتي-271","room":"3710111003","trainer":"انوار الصبحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الخميس","time":"1340 - 1200","course":"النشر الالكتروني","courseCode":"ملتي-271","room":"3710111003","trainer":"انوار الصبحي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"IMAC_1A3"},{"day":"الاثنين","time":"1250 - 1200","course":"موضوعات مختارة","courseCode":"ملتي-285","room":"3710112001","trainer":"حنان العزيزي المطيري","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الأحد","time":"1250 - 1200","course":"موضوعات مختارة","courseCode":"ملتي-285","room":"3710122009","trainer":"تهاني اللهيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B9_قاعة تدريبية"},{"day":"الخميس","time":"1050 - 1000","course":"موضوعات مختارة","courseCode":"ملتي-285","room":"3710122010","trainer":"تهاني اللهيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B10_قاعة تدريبية"},{"day":"الاثنين","time":"0940 - 0800","course":"موضوعات مختارة","courseCode":"ملتي-285","room":"3710133016","trainer":"حنان العزيزي المطيري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C16_معمل حاسب"},{"day":"الاثنين","time":"1140 - 1000","course":"موضوعات مختارة","courseCode":"ملتي-285","room":"3710112003","trainer":"حنان العزيزي المطيري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B3_معمل حاسب الي"},{"day":"الاثنين","time":"1140 - 1000","course":"موضوعات مختارة","courseCode":"ملتي-285","room":"3710113009","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C9-معمل حاسب آلي"},{"day":"الثلاثاء","time":"0940 - 0800","course":"موضوعات مختارة","courseCode":"ملتي-285","room":"3710121010","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الخميس","time":"0940 - 0800","course":"موضوعات مختارة","courseCode":"ملتي-285","room":"3710121012","trainer":"تهاني اللهيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A12_معمل حاسب الي"},{"day":"الأربعاء","time":"1450 - 1400","course":"مشروع","courseCode":"ملتي-295","room":"3710132016","trainer":"فاطمه الجهني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B16_قاعة تدريبية"},{"day":"الأربعاء","time":"1340 - 1200","course":"مشروع","courseCode":"ملتي-295","room":"3710132016","trainer":"فاطمه الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B16_قاعة تدريبية"},{"day":"الاثنين","time":"1550 - 1500","course":"مشروع","courseCode":"ملتي-295","room":"3710132016","trainer":"فاطمه الجهني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B16_قاعة تدريبية"},{"day":"الاثنين","time":"1440 - 1300","course":"مشروع","courseCode":"ملتي-295","room":"3710132016","trainer":"فاطمه الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B16_قاعة تدريبية"},{"day":"الاثنين","time":"1050 - 1000","course":"مشروع","courseCode":"ملتي-295","room":"3710132016","trainer":"فاطمه الجهني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B16_قاعة تدريبية"},{"day":"الاثنين","time":"0940 - 0800","course":"مشروع","courseCode":"ملتي-295","room":"3710132016","trainer":"فاطمه الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B16_قاعة تدريبية"},{"day":"الأربعاء","time":"1140 - 1000","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710112001","trainer":"شهد الزهراني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B1_قاعة تدريبية"},{"day":"الخميس","time":"0940 - 0800","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710132015","trainer":"شهد الزهراني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الأحد","time":"1140 - 1000","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710132016","trainer":"رغد المالكي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B16_قاعة تدريبية"},{"day":"الاثنين","time":"1340 - 1200","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710113006","trainer":"رغد المالكي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C6_معمل حاسب الي"},{"day":"الثلاثاء","time":"1340 - 1200","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710121012","trainer":"رغد المالكي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A12_معمل حاسب الي"},{"day":"الأربعاء","time":"1340 - 1200","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710121011","trainer":"شهد الزهراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A11_معمل حاسب الي"},{"day":"الثلاثاء","time":"1340 - 1200","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710121011","trainer":"شهد الزهراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A11_معمل حاسب الي"},{"day":"الثلاثاء","time":"1140 - 1000","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710121011","trainer":"شهد الزهراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A11_معمل حاسب الي"},{"day":"الأربعاء","time":"0940 - 0800","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710113005","trainer":"شهد الزهراني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C5_معمل حاسب الي"},{"day":"الأحد","time":"0940 - 0800","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710113005","trainer":"رغد المالكي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C5_معمل حاسب الي"},{"day":"الأربعاء","time":"1340 - 1200","course":"إدارة عميل الشبكة","courseCode":"نشبك-121","room":"3710131013","trainer":"رغد المالكي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A13_قاعة تدريبية"},{"day":"الثلاثاء","time":"1340 - 1200","course":"بيئة خادم الشبكة","courseCode":"نشبك-231","room":"3710132017","trainer":"أسماء العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B17_قاعة تدريبية"},{"day":"الثلاثاء","time":"1340 - 1200","course":"بيئة خادم الشبكة","courseCode":"نشبك-231","room":"3710122011","trainer":"حنان احمد","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B11_قاعة تدريبية"},{"day":"الثلاثاء","time":"0940 - 0800","course":"بيئة خادم الشبكة","courseCode":"نشبك-231","room":"3710122011","trainer":"حنان احمد","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B11_قاعة تدريبية"},{"day":"الأحد","time":"1120 - 0800","course":"بيئة خادم الشبكة","courseCode":"نشبك-231","room":"3710113006","trainer":"أسماء العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C6_معمل حاسب الي"},{"day":"الأحد","time":"1520 - 1200","course":"بيئة خادم الشبكة","courseCode":"نشبك-231","room":"3710113006","trainer":"أسماء العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C6_معمل حاسب الي"},{"day":"الخميس","time":"1120 - 0800","course":"بيئة خادم الشبكة","courseCode":"نشبك-231","room":"3710113004","trainer":"حنان احمد","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C4_معمل حاسب الي"},{"day":"الاثنين","time":"1520 - 1200","course":"بيئة خادم الشبكة","courseCode":"نشبك-231","room":"3710113004","trainer":"حنان احمد","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C4_معمل حاسب الي"},{"day":"الخميس","time":"1520 - 1200","course":"بيئة خادم الشبكة","courseCode":"نشبك-231","room":"3710113004","trainer":"حنان احمد","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C4_معمل حاسب الي"},{"day":"الاثنين","time":"1120 - 0800","course":"بيئة خادم الشبكة","courseCode":"نشبك-231","room":"3710113004","trainer":"حنان احمد","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C4_معمل حاسب الي"},{"day":"الاثنين","time":"0940 - 0800","course":"تطبيقات أنظمة الشبكة","courseCode":"نشبك-241","room":"3710133017","trainer":"رهف البرقاني","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3c17_ معمل"},{"day":"الاثنين","time":"1240 - 1100","course":"تطبيقات أنظمة الشبكة","courseCode":"نشبك-241","room":"3710131013","trainer":"فاطمه الجهني","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A13_قاعة تدريبية"},{"day":"الخميس","time":"1140 - 1000","course":"تطبيقات أنظمة الشبكة","courseCode":"نشبك-241","room":"3710113001","trainer":"فاطمه الجهني","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1c1_ قاعة تدريبية"},{"day":"الأربعاء","time":"1520 - 1200","course":"تطبيقات أنظمة الشبكة","courseCode":"نشبك-241","room":"3710112003","trainer":"رهف البرقاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B3_معمل حاسب الي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"تطبيقات أنظمة الشبكة","courseCode":"نشبك-241","room":"3710112004","trainer":"رهف البرقاني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B4_معمل حاسب الي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"تطبيقات أنظمة الشبكة","courseCode":"نشبك-241","room":"3710121009","trainer":"فاطمه الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A9_معمل توجيه وتحويل"},{"day":"الأربعاء","time":"1120 - 0800","course":"تطبيقات أنظمة الشبكة","courseCode":"نشبك-241","room":"3710112005","trainer":"فاطمه الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B5_معمل حاسب الي"},{"day":"الأحد","time":"1120 - 0800","course":"تطبيقات أنظمة الشبكة","courseCode":"نشبك-241","room":"3710121012","trainer":"فاطمه الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A12_معمل حاسب الي"},{"day":"الثلاثاء","time":"1120 - 0800","course":"تطبيقات أنظمة الشبكة","courseCode":"نشبك-241","room":"3710123010","trainer":"فاطمه الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2c10 معمل"},{"day":"الخميس","time":"1350 - 1300","course":"إدارة خدمات الشبكة","courseCode":"نشبك-261","room":"3710122010","trainer":"اجواد المجنوني","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B10_قاعة تدريبية"},{"day":"الخميس","time":"1450 - 1400","course":"إدارة خدمات الشبكة","courseCode":"نشبك-261","room":"3710112002","trainer":"اجواد المجنوني","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B2_قاغة تدريبية"},{"day":"الخميس","time":"1250 - 1200","course":"إدارة خدمات الشبكة","courseCode":"نشبك-261","room":"3710131015","trainer":"لميس الشهري","type":"تدريب مدمج صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A15_ورشة تأهلية"},{"day":"الثلاثاء","time":"1520 - 1200","course":"إدارة خدمات الشبكة","courseCode":"نشبك-261","room":"3710113009","trainer":"اجواد المجنوني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C9-معمل حاسب آلي"},{"day":"الاثنين","time":"1520 - 1200","course":"إدارة خدمات الشبكة","courseCode":"نشبك-261","room":"3710112005","trainer":"اجواد المجنوني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B5_معمل حاسب الي"},{"day":"الأحد","time":"1520 - 1200","course":"إدارة خدمات الشبكة","courseCode":"نشبك-261","room":"3710121009","trainer":"اجواد المجنوني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A9_معمل توجيه وتحويل"},{"day":"الخميس","time":"1120 - 0800","course":"إدارة خدمات الشبكة","courseCode":"نشبك-261","room":"3710112003","trainer":"اجواد المجنوني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B3_معمل حاسب الي"},{"day":"الاثنين","time":"1120 - 0800","course":"إدارة خدمات الشبكة","courseCode":"نشبك-261","room":"3710112006","trainer":"لميس الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B6_معمل حاسب الي"},{"day":"الثلاثاء","time":"1520 - 1200","course":"إدارة خدمات الشبكة","courseCode":"نشبك-261","room":"3710112006","trainer":"لميس الشهري","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B6_معمل حاسب الي"},{"day":"الخميس","time":"1250 - 1200","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710122010","trainer":"منار الصواط","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B10_قاعة تدريبية"},{"day":"الأربعاء","time":"1450 - 1400","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710122012","trainer":"منار الصواط","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2B12_قاعة تدريبية"},{"day":"الأربعاء","time":"1550 - 1500","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710111002","trainer":"منار الصواط","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A2_قاعة تدريبية"},{"day":"الأربعاء","time":"0940 - 0800","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710112004","trainer":"منار الصواط","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B4_معمل حاسب الي"},{"day":"الخميس","time":"1140 - 1000","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710113003","trainer":"فاديه الكلبي الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C3_معمل حاسب الي"},{"day":"الأحد","time":"0940 - 0800","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710113011","trainer":"منار الصواط","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C11-معمل حاسب آلي"},{"day":"الثلاثاء","time":"1340 - 1200","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710113003","trainer":"منار الصواط","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C3_معمل حاسب الي"},{"day":"الأربعاء","time":"1340 - 1200","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710113004","trainer":"منار الصواط","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C4_معمل حاسب الي"},{"day":"الاثنين","time":"1340 - 1200","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710121010","trainer":"منار الصواط","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2A10_معمل حاسب الي"},{"day":"الخميس","time":"1250 - 1200","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710113003","trainer":"فاديه الكلبي الجهني","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C3_معمل حاسب الي"},{"day":"الاثنين","time":"1340 - 1200","course":"موضوعات مختارة","courseCode":"نشبك-285","room":"3710113012","trainer":"فاديه الكلبي الجهني","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"2C12-معمل حاسب آلي"},{"day":"الأحد","time":"1450 - 1400","course":"مشروع","courseCode":"نشبك-295","room":"3710132016","trainer":"منار الصواط","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B16_قاعة تدريبية"},{"day":"الاثنين","time":"1050 - 1000","course":"مشروع","courseCode":"نشبك-295","room":"3710132018","trainer":"عبير الحليفي العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B18_فاعة تدريبية"},{"day":"الأربعاء","time":"1050 - 1000","course":"مشروع","courseCode":"نشبك-295","room":"3710132015","trainer":"عبير الحليفي العتيبي","type":"نظري صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الأحد","time":"1340 - 1200","course":"مشروع","courseCode":"نشبك-295","room":"3710132016","trainer":"منار الصواط","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B16_قاعة تدريبية"},{"day":"الاثنين","time":"0940 - 0800","course":"مشروع","courseCode":"نشبك-295","room":"3710132018","trainer":"عبير الحليفي العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B18_فاعة تدريبية"},{"day":"الأربعاء","time":"0940 - 0800","course":"مشروع","courseCode":"نشبك-295","room":"3710132015","trainer":"عبير الحليفي العتيبي","type":"عملي صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3B15_قاعة تدريبية"},{"day":"الثلاثاء","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"نشبك-299","room":"3710131014","trainer":"حمده السلمي","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3A14_قاعة تدريبية"},{"day":"الاثنين","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"نشبك-299","room":"3710112006","trainer":"أسماء العتيبي","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1B6_معمل حاسب الي"},{"day":"الثلاثاء","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"نشبك-299","room":"3710113005","trainer":"حنان احمد","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1C5_معمل حاسب الي"},{"day":"الخميس","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"نشبك-299","room":"3710111001","trainer":"تهاني اللهيبي","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"1A1_قاعة تدريبية"},{"day":"الاثنين","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"نشبك-299","room":"3710133016","trainer":"رهف البرقاني","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C16_معمل حاسب"},{"day":"الأحد","time":"2240 - 2100","course":"التدريب التعاوني","courseCode":"نشبك-299","room":"3710133016","trainer":"ابتسام العطوي","type":"تعاوني صباحي","section":"الحاسب وتقنية المعلومات","roomDesc":"3C16_معمل حاسب"},{"day":"الأربعاء","time":"1120 - 0800","course":"ورشة تأهيلية","courseCode":"الكت-102","room":"3710131015","trainer":"رهف البرقاني","type":"عملي صباحي","section":"التقنية الالكترونية","roomDesc":"3A15_ورشة تأهلية"},{"day":"الثلاثاء","time":"1120 - 0800","course":"ورشة تأهيلية","courseCode":"الكت-102","room":"3710131015","trainer":"لميس الشهري","type":"عملي صباحي","section":"التقنية الالكترونية","roomDesc":"3A15_ورشة تأهلية"},{"day":"الخميس","time":"1120 - 0800","course":"ورشة تأهيلية","courseCode":"الكت-102","room":"3710131015","trainer":"لميس الشهري","type":"عملي صباحي","section":"التقنية الالكترونية","roomDesc":"3A15_ورشة تأهلية"},{"day":"الأحد","time":"1120 - 0800","course":"ورشة تأهيلية","courseCode":"الكت-102","room":"3710131015","trainer":"رهف البرقاني","type":"عملي صباحي","section":"التقنية الالكترونية","roomDesc":"3A15_ورشة تأهلية"}];
+
+// ============ استيراد جدول القسم (Excel/CSV) بدل الجدول الثابت ============
+let SCHEDULE = DEFAULT_SCHEDULE;
+const SCHEDULE_STORAGE_KEY = 'custom-schedule-v1';
+const SCHEDULE_META_KEY = 'custom-schedule-meta-v1';
+
+function loadCustomSchedule(){
+  try{
+    const raw = localStorage.getItem(SCHEDULE_STORAGE_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed) && parsed.length > 0){
+        SCHEDULE = parsed;
+      }
+    }
+  }catch(e){ console.error('تعذر تحميل الجدول المخصص', e); }
+  renderScheduleSourceBadge();
+}
+
+function renderScheduleSourceBadge(){
+  const badge = document.getElementById('scheduleSourceBadge');
+  if(!badge) return;
+  let meta = null;
+  try{ meta = JSON.parse(localStorage.getItem(SCHEDULE_META_KEY) || 'null'); }catch(e){}
+  if(SCHEDULE !== DEFAULT_SCHEDULE && meta){
+    badge.innerHTML = `<span style="background:rgba(60,140,122,0.15);color:var(--accent-2);padding:5px 12px;border-radius:8px;font-size:12px;">📄 مصدر الجدول: ملف مرفوع (${meta.fileName || ''} — ${meta.count || SCHEDULE.length} محاضرة) <button id="resetScheduleBtn" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;text-decoration:underline;margin-right:6px;">استرجاع الجدول الافتراضي</button></span>`;
+    const resetBtn = document.getElementById('resetScheduleBtn');
+    if(resetBtn){
+      resetBtn.addEventListener('click', ()=>{
+        if(confirm('هل تريدين إلغاء جدول الملف المرفوع والعودة إلى الجدول الافتراضي المضمّن في الصفحة؟')){
+          localStorage.removeItem(SCHEDULE_STORAGE_KEY);
+          localStorage.removeItem(SCHEDULE_META_KEY);
+          location.reload();
+        }
+      });
+    }
+  } else {
+    badge.innerHTML = `<span style="background:rgba(0,0,0,0.05);color:var(--text-dim);padding:5px 12px;border-radius:8px;font-size:12px;">📄 مصدر الجدول: الجدول الافتراضي المضمّن (${SCHEDULE.length} محاضرة)</span>`;
+  }
+}
+
+function normalizeScheduleRow(row){
+  // يقبل أسماء أعمدة عربية أو إنجليزية مرنة
+  const get = (...keys)=>{
+    for(const k of keys){
+      if(row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') return String(row[k]).trim();
+    }
+    return '';
+  };
+  return {
+    day: get('اليوم','day','Day'),
+    time: get('الوقت','time','Time'),
+    course: get('المقرر','اسم المقرر','course','Course'),
+    courseCode: get('رمز المقرر','courseCode','Code'),
+    room: get('رقم القاعة','room','Room'),
+    trainer: get('المدربة','trainer','Trainer'),
+    type: get('نوع الشعبة','type','Type'),
+    section: get('القسم','التخصص','section','Section'),
+    roomDesc: get('وصف القاعة','القاعة','roomDesc','RoomDesc')
+  };
+}
+
+function handleScheduleFile(file){
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      let rows = [];
+      if(file.name.toLowerCase().endsWith('.csv')){
+        const text = new TextDecoder('utf-8').decode(e.target.result);
+        const lines = text.split(/\r?\n/).filter(l=>l.trim() !== '');
+        const headers = lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+        rows = lines.slice(1).map(line=>{
+          const cells = line.split(',').map(c=>c.trim().replace(/^"|"$/g,''));
+          const obj = {};
+          headers.forEach((h,i)=> obj[h] = cells[i] || '');
+          return obj;
+        });
+      } else {
+        const data = new Uint8Array(e.target.result);
+        const wb = XLSX.read(data, {type:'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(sheet, {defval:''});
+      }
+
+      const newSchedule = rows.map(normalizeScheduleRow).filter(r=>r.day && r.time && r.trainer);
+      if(newSchedule.length === 0){
+        alert('لم يتم العثور على صفوف صالحة في الملف. تأكدي من وجود أعمدة: اليوم، الوقت، المقرر، المدربة على الأقل.');
+        return;
+      }
+
+      localStorage.setItem(SCHEDULE_STORAGE_KEY, JSON.stringify(newSchedule));
+      localStorage.setItem(SCHEDULE_META_KEY, JSON.stringify({fileName: file.name, count: newSchedule.length, uploadedAt: new Date().toISOString()}));
+      alert('تم استيراد ' + newSchedule.length + ' محاضرة بنجاح. سيتم إعادة تحميل الصفحة الآن.');
+      location.reload();
+    }catch(err){
+      console.error(err);
+      alert('حدث خطأ أثناء قراءة الملف. تأكدي من أنه بصيغة Excel أو CSV صحيحة.');
+    }
+  };
+  if(file.name.toLowerCase().endsWith('.csv')){
+    reader.readAsArrayBuffer(file);
+  } else {
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+function downloadScheduleTemplate(){
+  const headers = ['اليوم','الوقت','المقرر','رمز المقرر','رقم القاعة','المدربة','نوع الشعبة','القسم','وصف القاعة'];
+  const sampleRow = ['الأحد','0940 - 0800','اسم المقرر','رمز-101','3710000000','اسم المدربة','نظري صباحي','الحاسب وتقنية المعلومات','1A1_قاعة تدريبية'];
+  const csvContent = "\ufeff" + [headers.join(','), sampleRow.join(',')].join('\n');
+  const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'قالب_جدول_القسم.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('uploadScheduleBtn').addEventListener('click', ()=>{
+  document.getElementById('scheduleFileInput').click();
+});
+document.getElementById('scheduleFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(file) handleScheduleFile(file);
+});
+document.getElementById('downloadTemplateBtn').addEventListener('click', downloadScheduleTemplate);
+// ============ نهاية كود استيراد الجدول ============
+
+
+const DAYS_ORDER = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس"];
+let attendance = {}; // key: date|refKey -> {status, notes}
+let currentDate = "";
+let currentDay = "";
+let sectionFilter = "";
+let trainerFilter = "";
+let semesterStart = "2026-08-23";
+let typeFilter = "";
+let roomFilter = "";
+let timeFromFilter = "";
+let timeToFilter = "";
+let searchTerm = "";
+let groupByZone = false;
+
+const SECTION_MERGE_MAP = {
+  "الحاسب وتقنية المعلومات": "الحاسب وتقنية المعلومات والتقنية الالكترونية",
+  "التقنية الالكترونية": "الحاسب وتقنية المعلومات والتقنية الالكترونية"
+};
+function getDisplaySection(rawSection){
+  return SECTION_MERGE_MAP[rawSection] || rawSection;
+}
+
+function getZone(roomDesc){
+  if(!roomDesc) return "غير محدد";
+  const m = roomDesc.match(/(\d+)\s*([A-Za-z])/);
+  return m ? (m[1] + m[2].toUpperCase()) : "غير محدد";
+}
+
+function timeStrToMinutes(t){
+  const [h,m] = t.split(":").map(Number);
+  return h*60+m;
+}
+function timeToMinutes(t){
+  const start = t.split("-")[1] ? t.split("-")[1].trim() : t;
+  const h = parseInt(start.slice(0,2));
+  const m = parseInt(start.slice(2,4));
+  return h*60+m;
+}
+function formatTime(t){
+  const parts = t.split("-").map(s=>s.trim());
+  if(parts.length!==2) return t;
+  const fmt = (x)=>{
+    let h = parseInt(x.slice(0,2));
+    let m = x.slice(2,4);
+    const period = h>=12 ? "م" : "ص";
+    let h12 = h%12; if(h12===0) h12=12;
+    return h12+":"+m+" "+period;
+  };
+  return fmt(parts[1])+" - "+fmt(parts[0]);
+}
+
+function dateToDayName(dateStr){
+  // JS getDay: 0=Sun,1=Mon,...6=Sat
+  const map = {0:"الأحد",1:"الاثنين",2:"الثلاثاء",3:"الأربعاء",4:"الخميس",5:"الجمعة",6:"السبت"};
+  const d = new Date(dateStr);
+  return map[d.getDay()];
+}
+
+function getWeekNumber(dateStr){
+  const start = new Date(semesterStart);
+  const d = new Date(dateStr);
+  const diffDays = Math.floor((d - start) / (1000*60*60*24));
+  if(diffDays < 0) return "قبل بداية الفصل";
+  return "الأسبوع " + (Math.floor(diffDays/7) + 1);
+}
+
+function recordKey(r){
+  return r.courseCode + "_" + r.trainer + "_" + r.time + "_" + r.day;
+}
+
+function loadAttendance(){
+  try{
+    const raw = localStorage.getItem('attendance-records');
+    attendance = raw ? JSON.parse(raw) : {};
+  }catch(e){
+    attendance = {};
+  }
+}
+
+function saveAttendance(){
+  try{
+    localStorage.setItem('attendance-records', JSON.stringify(attendance));
+  }catch(e){
+    console.error('فشل الحفظ', e);
+  }
+}
+
+function loadSemesterStart(){
+  try{
+    const raw = localStorage.getItem('semester-start');
+    if(raw) semesterStart = raw;
+  }catch(e){ /* استخدم القيمة الافتراضية */ }
+}
+
+function saveSemesterStart(){
+  try{
+    localStorage.setItem('semester-start', semesterStart);
+  }catch(e){ console.error('فشل حفظ تاريخ بداية الفصل', e); }
+}
+
+function buildFilters(){
+  const sections = [...new Set(SCHEDULE.map(r=>getDisplaySection(r.section)))].sort();
+  const sectionSel = document.getElementById('sectionFilter');
+  sectionSel.innerHTML = '<option value="">كل الأقسام</option>' + sections.map(s=>`<option value="${s}">${s}</option>`).join('');
+  sectionSel.onchange = (e)=>{ sectionFilter = e.target.value; refreshTrainerList(); render(); };
+
+  refreshTrainerList();
+  document.getElementById('trainerFilter').onchange = (e)=>{ trainerFilter = e.target.value; render(); };
+
+  const types = [...new Set(SCHEDULE.map(r=>r.type))].sort();
+  const typeSel = document.getElementById('typeFilter');
+  typeSel.innerHTML = '<option value="">كل الأنواع</option>' + types.map(t=>`<option value="${t}">${t}</option>`).join('');
+  typeSel.onchange = (e)=>{ typeFilter = e.target.value; render(); };
+
+  const rooms = [...new Set(SCHEDULE.map(r=>r.roomDesc).filter(Boolean))].sort();
+  const roomSel = document.getElementById('roomFilter');
+  roomSel.innerHTML = '<option value="">كل القاعات</option>' + rooms.map(r=>`<option value="${r}">${r}</option>`).join('');
+  roomSel.onchange = (e)=>{ roomFilter = e.target.value; render(); };
+
+  document.getElementById('timeFromFilter').addEventListener('change', (e)=>{ timeFromFilter = e.target.value; render(); });
+  document.getElementById('timeToFilter').addEventListener('change', (e)=>{ timeToFilter = e.target.value; render(); });
+  document.getElementById('searchInput').addEventListener('input', (e)=>{ searchTerm = e.target.value; render(); });
+  document.getElementById('groupByZoneToggle').addEventListener('change', (e)=>{ groupByZone = e.target.checked; render(); });
+
+  const availableDays = DAYS_ORDER.filter(d=>SCHEDULE.some(r=>r.day===d));
+  const daySel = document.getElementById('dayFilter');
+  daySel.innerHTML = availableDays.map(d=>`<option value="${d}">${d}</option>`).join('');
+  daySel.onchange = (e)=>{ currentDay = e.target.value; render(); };
+
+  const today = new Date();
+  document.getElementById('dateInput').valueAsDate = today;
+  currentDate = document.getElementById('dateInput').value;
+  const guessDay = dateToDayName(currentDate);
+  currentDay = availableDays.includes(guessDay) ? guessDay : availableDays[0];
+  daySel.value = currentDay;
+
+  document.getElementById('dateInput').addEventListener('change', (e)=>{
+    currentDate = e.target.value;
+    render();
+  });
+
+  const semInput = document.getElementById('semesterStartInput');
+  semInput.value = semesterStart;
+  semInput.addEventListener('change', (e)=>{
+    semesterStart = e.target.value;
+    saveSemesterStart();
+    render();
+  });
+}
+
+function refreshTrainerList(){
+  let pool = SCHEDULE;
+  if(sectionFilter){ pool = pool.filter(r=>getDisplaySection(r.section)===sectionFilter); }
+  const trainers = [...new Set(pool.map(r=>r.trainer))].sort();
+  const sel = document.getElementById('trainerFilter');
+  const prev = trainerFilter;
+  sel.innerHTML = '<option value="">كل المدربات</option>' + trainers.map(t=>`<option value="${t}">${t}</option>`).join('');
+  if(trainers.includes(prev)){ sel.value = prev; } else { trainerFilter = ""; }
+}
+
+function setStatus(key, status){
+  if(!attendance[key]) attendance[key] = {};
+  attendance[key].status = status;
+  saveAttendance();
+  render();
+  syncKeyToExcel(key);
+}
+
+const SHEETS_WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbzrCds6xfATzHAV2w6LBfuwffrs5TZ_ydU4FPOKmqC4-OkzzA54zttI9koCBQThVBLL/exec";
+
+function syncKeyToExcel(key){
+  try{
+    const [date, rest] = key.split('|');
+    const parts = rest.split('_');
+    const courseCode = parts[0];
+    const trainer = parts[1];
+    const time = parts[2];
+    const day = parts[3];
+    const rec = SCHEDULE.find(r=>r.courseCode===courseCode && r.trainer===trainer && r.time===time && r.day===day);
+    if(!rec) return;
+
+    const payload = {
+      "__sheet__": "متابعة_الحضور",
+      "التاريخ": date,
+      "الأسبوع": getWeekNumber(date),
+      "اليوم": day,
+      "المدربة": trainer,
+      "المقرر": rec.course,
+      "رمز المقرر": courseCode,
+      "القاعة": rec.roomDesc || rec.room,
+      "القسم": rec.section,
+      "الوقت": time,
+      "الحالة": (attendance[key] && attendance[key].status) || "",
+      "ملاحظات": (attendance[key] && attendance[key].notes) || ""
+    };
+
+    const qs = Object.keys(payload).map(k=>encodeURIComponent(k)+"="+encodeURIComponent(payload[k])).join("&");
+    fetch(SHEETS_WEBHOOK_URL + "?" + qs, { method: 'GET', mode: 'no-cors' })
+      .catch(()=>{ /* فشل صامت لا يعطل الصفحة */ });
+  }catch(e){
+    console.error('فشل المزامنة مع Google Sheets', e);
+  }
+}
+
+function setNotes(key, value){
+  if(!attendance[key]) attendance[key] = {};
+  attendance[key].notes = value;
+  saveAttendance();
+  syncKeyToExcel(key);
+}
+
+function render(){
+  let items = SCHEDULE.filter(r=>r.day===currentDay);
+  if(sectionFilter){ items = items.filter(r=>getDisplaySection(r.section)===sectionFilter); }
+  if(trainerFilter){ items = items.filter(r=>r.trainer===trainerFilter); }
+  if(typeFilter){ items = items.filter(r=>r.type===typeFilter); }
+  if(roomFilter){ items = items.filter(r=>r.roomDesc===roomFilter); }
+  if(timeFromFilter){
+    const fromMin = timeStrToMinutes(timeFromFilter);
+    items = items.filter(r=>timeToMinutes(r.time)>=fromMin);
+  }
+  if(timeToFilter){
+    const toMin = timeStrToMinutes(timeToFilter);
+    items = items.filter(r=>timeToMinutes(r.time)<=toMin);
+  }
+  if(searchTerm.trim()){
+    const q = searchTerm.trim();
+    items = items.filter(r=>
+      r.trainer.includes(q) || r.course.includes(q) || r.courseCode.includes(q) || (r.roomDesc && r.roomDesc.includes(q))
+    );
+  }
+
+  items.sort((a,b)=>{
+    const ta = a.time.split('-')[1].trim();
+    const tb = b.time.split('-')[1].trim();
+    return ta.localeCompare(tb);
+  });
+
+  document.getElementById('weekDisplay').value = getWeekNumber(currentDate);
+
+  let present=0, late=0, absent=0, unmarked=0;
+  items.forEach(r=>{
+    const key = currentDate + "|" + recordKey(r);
+    const st = attendance[key] ? attendance[key].status : null;
+    if(st==='حاضرة') present++;
+    else if(st==='متأخرة') late++;
+    else if(st==='غائبة') absent++;
+    else unmarked++;
+  });
+
+  document.getElementById('statsBox').innerHTML = `
+    <div class="stat"><div class="num">${items.length}</div><div class="lbl">إجمالي المحاضرات</div></div>
+    <div class="stat"><div class="num" style="color:var(--ok)">${present}</div><div class="lbl">حاضرة</div></div>
+    <div class="stat"><div class="num" style="color:var(--warn)">${late}</div><div class="lbl">متأخرة</div></div>
+    <div class="stat"><div class="num" style="color:var(--danger)">${absent}</div><div class="lbl">غائبة</div></div>
+    <div class="stat"><div class="num" style="color:var(--text-dim)">${unmarked}</div><div class="lbl">غير مسجل</div></div>
+  `;
+
+  const wrap = document.getElementById('lecturesList');
+  if(items.length===0){
+    wrap.innerHTML = '<div class="empty">لا توجد محاضرات مطابقة لهذا اليوم/الفلاتر</div>';
+  } else if(groupByZone){
+    wrap.innerHTML = renderByZone(items);
+  } else {
+    wrap.innerHTML = items.map(r=>{
+      const key = currentDate + "|" + recordKey(r);
+      const rec = attendance[key] || {};
+      const st = rec.status || "";
+      const notes = rec.notes || "";
+      return `
+        <div class="lecture-card">
+          <div class="time-box">
+            <div class="t">${r.time}</div>
+            <div class="lbl">الوقت</div>
+          </div>
+          <div class="lecture-info">
+            <div class="course">${r.trainer}</div>
+            <div class="meta">
+              <span>📘 ${r.course} (${r.courseCode})</span>
+              <span>🏫 ${r.roomDesc || r.room}</span>
+              <span>📚 ${r.section}</span>
+              <span>🗓️ ${getWeekNumber(currentDate)}</span>
+            </div>
+          </div>
+          <div class="status-group">
+            <div class="status-btn ${st==='حاضرة'?'active present':''}" onclick="setStatus('${key}','حاضرة')">حاضرة</div>
+            <div class="status-btn ${st==='متأخرة'?'active late':''}" onclick="setStatus('${key}','متأخرة')">متأخرة</div>
+            <div class="status-btn ${st==='غائبة'?'active absent':''}" onclick="setStatus('${key}','غائبة')">غائبة</div>
+          </div>
+          <input class="notes-input" placeholder="ملاحظات..." value="${notes.replace(/"/g,'&quot;')}" onchange="setNotes('${key}', this.value)">
+        </div>
+      `;
+    }).join('');
+  }
+
+  renderWeekSummary();
+}
+
+function renderByZone(items){
+  const zoneMap = {};
+  items.forEach(r=>{
+    const zone = getZone(r.roomDesc);
+    if(!zoneMap[zone]) zoneMap[zone] = [];
+    zoneMap[zone].push(r);
+  });
+
+  const zones = Object.keys(zoneMap).sort();
+
+  return zones.map(zone=>{
+    const zoneItems = zoneMap[zone];
+    const roomMap = {};
+    zoneItems.forEach(r=>{
+      const roomLabel = r.roomDesc || ('قاعة ' + r.room);
+      if(!roomMap[roomLabel]) roomMap[roomLabel] = [];
+      roomMap[roomLabel].push(r);
+    });
+    const roomNames = Object.keys(roomMap).sort();
+
+    const roomsHtml = roomNames.map(roomName=>{
+      const lectures = roomMap[roomName].slice().sort((a,b)=>timeToMinutes(a.time)-timeToMinutes(b.time));
+      const lecturesHtml = lectures.map(r=>{
+        const key = currentDate + "|" + recordKey(r);
+        const rec = attendance[key] || {};
+        const st = rec.status || "";
+        return `
+          <div class="mini-lecture">
+            <span class="mt">${formatTime(r.time)}</span> —
+            <span class="mc">${r.course}</span>
+            <span class="mtr">👤 ${r.trainer} · ${r.section}</span>
+            <div class="mini-status-group">
+              <div class="mini-status-btn ${st==='حاضرة'?'active present':''}" onclick="setStatus('${key}','حاضرة')">حاضرة</div>
+              <div class="mini-status-btn ${st==='متأخرة'?'active late':''}" onclick="setStatus('${key}','متأخرة')">متأخرة</div>
+              <div class="mini-status-btn ${st==='غائبة'?'active absent':''}" onclick="setStatus('${key}','غائبة')">غائبة</div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      return `
+        <div class="room-group">
+          <div class="room-group-title">🏫 ${roomName}</div>
+          ${lecturesHtml}
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <div class="zone-section">
+        <div class="zone-header">
+          <div class="zone-badge">منطقة ${zone}</div>
+          <div class="zone-count">${zoneItems.length} محاضرة في ${roomNames.length} معمل/قاعة</div>
+        </div>
+        <div class="zone-rooms-row">${roomsHtml}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderWeekSummary(){
+  // تجميع حسب المدربة لكل السجلات المحفوظة (بدون تقييد بالتاريخ الحالي فقط لعرض شامل)
+  const summary = {};
+  Object.keys(attendance).forEach(key=>{
+    const [date, rest] = key.split('|');
+    const parts = rest.split('_');
+    const trainer = parts[1];
+    if(!summary[trainer]) summary[trainer] = {present:0, late:0, absent:0};
+    const st = attendance[key].status;
+    if(st==='حاضرة') summary[trainer].present++;
+    else if(st==='متأخرة') summary[trainer].late++;
+    else if(st==='غائبة') summary[trainer].absent++;
+  });
+
+  const wrap = document.getElementById('weekSummary');
+  const trainers = Object.keys(summary);
+  if(trainers.length===0){
+    wrap.innerHTML = '<div class="empty">لا توجد سجلات محفوظة بعد</div>';
+    return;
+  }
+
+  wrap.innerHTML = `
+    <table>
+      <tr><th>المدربة</th><th>حاضرة</th><th>متأخرة</th><th>غائبة</th></tr>
+      ${trainers.map(t=>`
+        <tr>
+          <td>${t}</td>
+          <td><span class="badge ok">${summary[t].present}</span></td>
+          <td><span class="badge warn">${summary[t].late}</span></td>
+          <td><span class="badge danger">${summary[t].absent}</span></td>
+        </tr>
+      `).join('')}
+    </table>
+  `;
+}
+
+function exportToCSV(){
+  const headers = ['التاريخ','الأسبوع','اليوم','المدربة','المقرر','رمز المقرر','القاعة','القسم','الوقت','الحالة','ملاحظات'];
+  const lines = [headers.join(',')];
+
+  Object.keys(attendance).forEach(key=>{
+    const [date, rest] = key.split('|');
+    const parts = rest.split('_');
+    const courseCode = parts[0];
+    const trainer = parts[1];
+    const time = parts[2];
+    const day = parts[3];
+
+    const rec = SCHEDULE.find(r=>r.courseCode===courseCode && r.trainer===trainer && r.time===time && r.day===day);
+    const status = attendance[key].status || '';
+    const notes = (attendance[key].notes || '').replace(/"/g,'""');
+
+    const row = [
+      date,
+      getWeekNumber(date),
+      day,
+      trainer,
+      rec ? rec.course : '',
+      courseCode,
+      rec ? (rec.roomDesc || rec.room) : '',
+      rec ? rec.section : '',
+      time,
+      status,
+      `"${notes}"`
+    ];
+    lines.push(row.join(','));
+  });
+
+  const csvContent = "\ufeff" + lines.join('\n');
+  const blob = new Blob([csvContent], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'attendance_export_' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+
+  try{ localStorage.setItem('attendance-last-export', new Date().toISOString()); }catch(e){}
+  renderReminderBanner();
+}
+
+function renderReminderBanner(){
+  const banner = document.getElementById('reminderBanner');
+  let lastExport = null;
+  try{ lastExport = localStorage.getItem('attendance-last-export'); }catch(e){}
+  if(!lastExport){
+    banner.innerHTML = `<div class="reminder-banner">📤 لم يسبق تصدير نسخة من سجلات الحضور. يُفضّل تصدير نسخة أسبوعيًا.</div>`;
+    return;
+  }
+  const days = Math.floor((new Date() - new Date(lastExport)) / (1000*60*60*24));
+  if(days >= 7){
+    banner.innerHTML = `<div class="reminder-banner">📤 آخر تصدير كان منذ ${days} يومًا — حان وقت تصدير نسخة جديدة.</div>`;
+  } else {
+    banner.innerHTML = '';
+  }
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportToCSV);
+
+document.getElementById('syncAllBtn').addEventListener('click', ()=>{
+  const keys = Object.keys(attendance);
+  if(keys.length===0){
+    alert('لا توجد سجلات لمزامنتها بعد.');
+    return;
+  }
+  keys.forEach((k, i)=>{
+    setTimeout(()=>syncKeyToExcel(k), i*150);
+  });
+  alert('بدأت المزامنة... سترسل ' + keys.length + ' سجل إلى Excel خلال ثوانٍ.');
+});
+
+document.getElementById('clearDataBtn').addEventListener('click', ()=>{
+  if(confirm('هل أنتِ متأكدة من مسح كل سجلات الحضور المحفوظة على هذا الجهاز؟ هذا الإجراء لا يمكن التراجع عنه.')){
+    localStorage.removeItem('attendance-records');
+    localStorage.removeItem('semester-start');
+    localStorage.removeItem('attendance-last-export');
+    location.reload();
+  }
+});
+
+(async function init(){
+  loadCustomSchedule();
+  await loadAttendance();
+  await loadSemesterStart();
+  buildFilters();
+  render();
+  renderReminderBanner();
+})();
+</script>
+
+</body>
+</html>
