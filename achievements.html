@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>صفحة الإنجازات</title>
+<style>
+  :root{
+    --bg:#F7F5F1; --panel:#FFFFFF; --panel-2:#F0EDE7;
+    --accent:#C97D2C; --accent-2:#3C8C7A; --text:#1F2A29; --text-dim:#6B7674;
+    --gold:#C9A227; --silver:#9AA0A6; --bronze:#B5651D;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:'Tahoma','Segoe UI',sans-serif; padding:24px; }
+  h1{ font-size:22px; margin:0 0 4px; }
+  h2{ font-size:16px; color:var(--accent); margin:30px 0 14px; }
+  .subtitle{ color:var(--text-dim); font-size:13px; margin-bottom:20px; }
+  .top-bar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+  .home-link{ text-decoration:none; color:var(--accent); font-size:13px; font-weight:bold; }
+  .refresh-btn{ background:var(--accent-2); color:#fff; border:none; border-radius:8px; padding:9px 16px; font-size:12.5px; font-weight:bold; cursor:pointer; }
+
+  .term-badge{ display:inline-block;background:rgba(60,140,122,0.12);color:#3C8C7A;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:bold;margin-bottom:10px; }
+
+  .category-block{ background:var(--panel); border-radius:16px; padding:20px 22px; border:1px solid rgba(0,0,0,0.08); box-shadow:0 1px 6px rgba(0,0,0,0.06); margin-bottom:20px; }
+  .category-title{ font-size:15px; font-weight:bold; margin-bottom:4px; }
+  .category-desc{ font-size:12px; color:var(--text-dim); margin-bottom:16px; }
+
+  .podium{ display:flex; gap:14px; flex-wrap:wrap; }
+  .podium-card{
+    flex:1; min-width:160px; background:var(--panel-2); border-radius:14px; padding:16px;
+    text-align:center; position:relative;
+  }
+  .podium-card.rank-1{ border:2px solid var(--gold); }
+  .podium-card.rank-2{ border:2px solid var(--silver); }
+  .podium-card.rank-3{ border:2px solid var(--bronze); }
+  .medal{ font-size:26px; margin-bottom:6px; }
+  .p-name{ font-weight:bold; font-size:13.5px; margin-bottom:4px; }
+  .p-value{ font-size:20px; font-weight:bold; color:var(--accent-2); }
+  .p-note{ font-size:11px; color:var(--text-dim); margin-top:4px; }
+
+  .rest-list{ margin-top:14px; }
+  .rest-row{ display:flex; justify-content:space-between; font-size:12px; padding:6px 0; border-bottom:1px solid rgba(0,0,0,0.05); }
+  .rest-row:last-child{ border-bottom:none; }
+  @media(max-width:600px){body{padding:16px 12px}.podium{display:grid;grid-template-columns:1fr}.category-block{padding:16px 14px}}
+  .rest-rank{ color:var(--text-dim); width:22px; display:inline-block; }
+
+  .empty-note{ color:var(--text-dim); font-size:12.5px; text-align:center; padding:20px 0; }
+  .method-note{ background:#FCEFE3; border:1px solid var(--accent); border-radius:10px; padding:10px 16px; font-size:11.5px; margin-bottom:22px; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <a href="index.html" class="home-link">🏠 الصفحة الرئيسية</a>
+  <button class="refresh-btn" id="refreshBtn">🔄 تحديث</button>
+</div>
+
+<div class="term-badge">📆 الفصل التدريبي الأول — العام التدريبي 1448هـ</div>
+<h1>🏆 صفحة الإنجازات</h1>
+<div class="subtitle">تكريم المدربات المتميزات هذا الفصل حسب عدة معايير — الوجه الإيجابي المقابل لقسم التنبيهات</div>
+
+<div class="method-note">
+  ℹ️ جميع الترتيبات مبنية على البيانات المسجلة فعلياً حتى لحظة فتح الصفحة. ويعبّر ترتيب الاكتمال عن متوسط منصة تقني ومجلد المتابعة، وليس عن مقارنة زمنية.
+</div>
+
+<div id="content"></div>
+
+<script>
+function safeParse(key, fallback){
+  try{ const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+  catch(e){ return fallback; }
+}
+function pct(done, total){ return total ? Math.round((done/total)*1000)/10 : 0; }
+// ===== منطق موحّد لحالة المحاضرات (نفس صفحة متابعة المحاضرات) =====
+// الأولوية: تعديل يدوي على المحاضرة ← الحضور الإداري للمدربة ← حاضرة تلقائياً
+let DEPT_CFG = {removedTrainers:[], leaders:[], maleTrainers:[], semesterStart:'2026-08-23', holidays:[]};
+let LEC_SCHEDULE = [];
+const LEC_DAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+function lsGet(key, fb){ try{ const r = localStorage.getItem(key); return r ? JSON.parse(r) : fb; }catch(e){ return fb; } }
+function lecNorm(s){ return (!s || s==='حاضرة' || s==='متأخرة') ? 'حاضرة' : 'غائبة'; }
+function ymd(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function localToday(){ return ymd(new Date()); }
+function isMale(t){ return (DEPT_CFG.maleTrainers||[]).includes(t); }
+function excludedLecTrainer(t){ return (DEPT_CFG.removedTrainers||[]).includes(t) || (DEPT_CFG.leaders||[]).includes(t); }
+// مستبعدون من منصة تقني/مجلد المتابعة/التقييم: المحذوفات + القيادات + المدربون الرجال
+function excludedTrackTrainer(t){ return excludedLecTrainer(t) || isMale(t) || t==='مدرب خارجي' || t==='-'; }
+async function loadDeptData(){
+  let txt = '';
+  try{ const r = await fetch('attendance.html'); if(r.ok) txt = await r.text(); }catch(e){}
+  const cfg = txt ? extractConst(txt, 'DEPT_CONFIG') : null;
+  if(cfg) DEPT_CFG = Object.assign(DEPT_CFG, cfg);
+  let sch = lsGet('custom-schedule-v2', []);
+  if(!Array.isArray(sch) || !sch.length) sch = (txt ? extractConst(txt, 'DEFAULT_SCHEDULE') : null) || [];
+  LEC_SCHEDULE = sch.filter(r=>r && r.trainer && !excludedLecTrainer(r.trainer) && !(r.type||'').includes('تعاوني'));
+  return LEC_SCHEDULE;
+}
+// كل محاضرة مجدولة بين تاريخين (لا تتجاوز اليوم ولا تسبق بداية الفصل، وتتجاوز الإجازات)
+function buildLectureRows(from, to){
+  const recs = lsGet('attendance-records', {}), adm = lsGet('trainer-daily-attendance', {});
+  const today = localToday(), start0 = DEPT_CFG.semesterStart || '2000-01-01';
+  const start = (!from || from < start0) ? start0 : from;
+  const end = (!to || to > today) ? today : to;
+  const hol = new Set(DEPT_CFG.holidays || []);
+  const rows = [];
+  if(start > end) return rows;
+  const d = new Date(start+'T12:00:00'), last = new Date(end+'T12:00:00');
+  let guard = 0;
+  while(d <= last && guard++ < 400){
+    const date = ymd(d), day = LEC_DAYS[d.getDay()];
+    if(!hol.has(date)){
+      LEC_SCHEDULE.filter(s=>s.day===day).forEach(s=>{
+        const key = date+'|'+s.courseCode+'_'+s.trainer+'_'+s.time+'_'+s.day;
+        const rec = recs[key], a = adm[date+'|TR|'+s.trainer];
+        let status, source, notes = '', raw = '';
+        if(rec && rec._manual){ status = lecNorm(rec.status); raw = rec.status||''; source = 'يدوي'; notes = rec.notes || ''; }
+        else if(a && a.status){ status = lecNorm(a.status); raw = a.status; source = 'الحضور الإداري'; notes = a.notes || (a.status!=='حاضرة' ? a.status : ''); }
+        else { status = lecNorm(rec && rec.status); raw = (rec && rec.status)||''; source = (rec && rec.status) ? 'يدوي' : 'تلقائي'; notes = (rec && rec.notes) || ''; }
+        rows.push({date, day, code:s.courseCode, course:s.course||'', trainer:s.trainer, time:s.time, room:s.roomDesc||s.room||'', type:s.type||'', status, raw, source, notes, male:isMale(s.trainer)});
+      });
+    }
+    d.setDate(d.getDate()+1);
+  }
+  return rows.sort((a,b)=>a.date.localeCompare(b.date) || a.time.split('-')[1].trim().localeCompare(b.time.split('-')[1].trim()));
+}
+// ملخص لكل مدربة
+function summarizeByTrainer(rows){
+  const g = {};
+  rows.forEach(r=>{
+    const t = g[r.trainer] || (g[r.trainer] = {name:r.trainer, total:0, present:0, absent:0, absentDays:new Set(), alertDays:new Set(), reasons:{}, male:r.male});
+    t.total++;
+    if(r.status==='حاضرة') t.present++;
+    else { t.absent++; t.absentDays.add(r.date); if(r.raw!=='مستأذنة' && r.raw!=='مهمة عمل') t.alertDays.add(r.date); const why = r.notes || 'غائبة'; t.reasons[why] = (t.reasons[why]||0)+1; }
+  });
+  return Object.values(g).map(t=>Object.assign(t, {rate: t.total ? Math.round(t.present/t.total*1000)/10 : 0, absentDayCount: t.absentDays.size, alertDayCount: t.alertDays.size}));
+}
+
+
+function extractConst(text, varName){
+  const marker = 'const ' + varName + ' = ';
+  const idx = text.indexOf(marker);
+  if(idx === -1) return null;
+  const start = idx + marker.length;
+  const opener = text[start];
+  const closer = opener === '{' ? '}' : ']';
+  let depth=0, inString=false, escapeNext=false, end=-1;
+  for(let i=start;i<text.length;i++){
+    const ch = text[i];
+    if(escapeNext){ escapeNext=false; continue; }
+    if(ch==='\\'){ escapeNext=true; continue; }
+    if(ch==='"'){ inString=!inString; continue; }
+    if(inString) continue;
+    if(ch===opener) depth++;
+    else if(ch===closer){ depth--; if(depth===0){ end=i+1; break; } }
+  }
+  if(end===-1) return null;
+  try{ return JSON.parse(text.slice(start,end)); } catch(e){ return null; }
+}
+async function fetchAndExtract(url, varName){
+  try{
+    const res = await fetch(url);
+    if(!res.ok) return null;
+    const text = await res.text();
+    return extractConst(text, varName);
+  }catch(e){ return null; }
+}
+
+function medalFor(i){ return ['🥇','🥈','🥉'][i] || `#${i+1}`; }
+function rankClass(i){ return ['rank-1','rank-2','rank-3'][i] || ''; }
+
+function renderCategory(title, desc, ranked, valueSuffix, noteFn){
+  if(ranked.length === 0){
+    return `
+      <div class="category-block">
+        <div class="category-title">${title}</div>
+        <div class="category-desc">${desc}</div>
+        <div class="empty-note">لا توجد بيانات كافية بعد</div>
+      </div>`;
+  }
+  const top3 = ranked.slice(0,3);
+  const rest = ranked.slice(3,10);
+  const podiumHtml = top3.map((r,i)=>`
+    <div class="podium-card ${rankClass(i)}">
+      <div class="medal">${medalFor(i)}</div>
+      <div class="p-name">${r.name}</div>
+      <div class="p-value">${r.value}${valueSuffix}</div>
+      ${noteFn ? `<div class="p-note">${noteFn(r)}</div>` : ''}
+    </div>
+  `).join('');
+  const restHtml = rest.length ? `
+    <div class="rest-list">
+      ${rest.map((r,i)=>`
+        <div class="rest-row">
+          <span><span class="rest-rank">${i+4}.</span>${r.name}</span>
+          <span>${r.value}${valueSuffix}</span>
+        </div>
+      `).join('')}
+    </div>` : '';
+  return `
+    <div class="category-block">
+      <div class="category-title">${title}</div>
+      <div class="category-desc">${desc}</div>
+      <div class="podium">${podiumHtml}</div>
+      ${restHtml}
+    </div>`;
+}
+
+async function loadAndRender(){
+  document.getElementById('content').innerHTML = '<div class="empty-note">جارِ تحميل البيانات...</div>';
+
+  const [platformData, filesData, evalData] = await Promise.all([
+    fetchAndExtract('platform_tracking.html', 'PLATFORM_DATA'),
+    fetchAndExtract('files_tracking.html', 'FILES_DATA'),
+    fetchAndExtract('evaluation_tracking.html', 'EVAL_DATA'),
+    loadDeptData()
+  ]);
+  if(platformData) platformData.rows = platformData.rows.filter(r=>!excludedTrackTrainer(r.trainer));
+  if(filesData) Object.keys(filesData.trainers).forEach(name=>{ if(excludedTrackTrainer(name)) delete filesData.trainers[name]; });
+  if(evalData) evalData.trainers = evalData.trainers.filter(name=>!excludedTrackTrainer(name));
+
+  // ===== 1) أعلى التزام (الحضور) — من بداية الفصل لليوم، بدون المدربين الرجال (ما عندهم حضور إداري) =====
+  const attRows = buildLectureRows(DEPT_CFG.semesterStart, localToday()).filter(r=>!r.male);
+  const attendanceRanked = summarizeByTrainer(attRows)
+    .filter(t=> t.total >= 3)
+    .map(t=> ({ name: t.name, value: t.rate, meta: t }))
+    .sort((a,b)=> b.value - a.value || a.meta.absentDayCount - b.meta.absentDayCount || b.meta.total - a.meta.total);
+
+  // ===== 2) أعلى تقييم =====
+  let evalRanked = [];
+  if(evalData){
+    const scores = safeParse('trainer-evaluation', {});
+    evalRanked = evalData.trainers.map(trainer=>{
+      let total = 0;
+      evalData.criteria.forEach(c=>{
+        const k = trainer + "||" + c.group + "||" + c.label;
+        total += (k in scores) ? scores[k] : 0;
+      });
+      const p = evalData.totalWeight ? Math.round((total/evalData.totalWeight)*1000)/10 : 0;
+      return { name: trainer, value: p, hasScore: total > 0 };
+    }).filter(r=>r.hasScore).sort((a,b)=> b.value - a.value);
+  }
+
+  // ===== 3) الأعلى اكتمالاً (منصة تقني + مجلد المتابعة) =====
+  let devRanked = [];
+  if(platformData && filesData){
+    const platChecks = safeParse('platform-tracking', {});
+    const filesChecks = safeParse('files-tracking', {});
+
+    const platByTrainer = {};
+    platformData.rows.forEach(row=>{
+      if(!platByTrainer[row.trainer]) platByTrainer[row.trainer] = {done:0,total:0};
+      platformData.items.forEach(it=>{
+        platByTrainer[row.trainer].total++;
+        const k = row.trainer + "||" + row.course + "||" + it.label;
+        const checked = (k in platChecks) ? platChecks[k] : row.items[it.label];
+        if(checked) platByTrainer[row.trainer].done++;
+      });
+    });
+
+    const filesByTrainer = {};
+    Object.keys(filesData.trainers).forEach(trainer=>{
+      const tData = filesData.trainers[trainer];
+      let done=0, total=0;
+      (tData.courses||[]).forEach(c=>{
+        filesData.courseItemLabels.forEach(item=>{
+          total++;
+          const k = 'C||'+trainer+'||'+c.course+'||'+item;
+          const checked = (k in filesChecks) ? filesChecks[k] : c.items[item];
+          if(checked) done++;
+        });
+      });
+      filesData.trainerItemMeta.forEach(meta=>{
+        total++;
+        const k = 'T||'+trainer+'||'+meta.label;
+        const checked = (k in filesChecks) ? filesChecks[k] : tData.trainerItems[meta.label];
+        if(checked) done++;
+      });
+      filesByTrainer[trainer] = {done, total};
+    });
+
+    const allTrainers = new Set([...Object.keys(platByTrainer), ...Object.keys(filesByTrainer)]);
+    devRanked = [...allTrainers].map(name=>{
+      const p1 = platByTrainer[name] ? pct(platByTrainer[name].done, platByTrainer[name].total) : null;
+      const p2 = filesByTrainer[name] ? pct(filesByTrainer[name].done, filesByTrainer[name].total) : null;
+      const values = [p1,p2].filter(v=>v!==null);
+      if(values.length === 0) return null;
+      const avg = Math.round((values.reduce((a,b)=>a+b,0)/values.length)*10)/10;
+      return { name, value: avg, p1, p2 };
+    }).filter(Boolean).filter(r=>r.value > 0).sort((a,b)=> b.value - a.value);
+  }
+
+  const html = `
+    ${renderCategory(
+      '✅ أعلى التزام بالحضور',
+      'نسبة حضور المحاضرات منذ بداية الفصل، مبنية على الحضور الإداري (المحاضرة بدون تسجيل تُحسب حاضرة). عند التساوي تتقدّم الأقل أيام غياب ثم الأكثر محاضرات.',
+      attendanceRanked, '%',
+      r => `حاضرة ${r.meta.present} من ${r.meta.total} محاضرة${r.meta.absentDayCount ? ' | أيام الغياب: '+r.meta.absentDayCount : ''}`
+    )}
+    ${renderCategory(
+      '⭐ أعلى تقييم',
+      'أعلى نسبة في تقييم أعضاء هيئة التدريب لهذا الفصل',
+      evalRanked, '%'
+    )}
+    ${renderCategory(
+      '🚀 الأعلى اكتمالاً وإنجازاً',
+      'متوسط نسبة اكتمال منصة تقني ومجلد المتابعة معاً (تظهر فقط المدربات اللي عندهن إنجاز مسجّل)',
+      devRanked, '%',
+      r => `منصة تقني: ${r.p1!==null? r.p1+'%':'—'} | مجلد المتابعة: ${r.p2!==null? r.p2+'%':'—'}`
+    )}
+  `;
+  document.getElementById('content').innerHTML = html;
+}
+
+document.getElementById('refreshBtn').addEventListener('click', loadAndRender);
+loadAndRender();
+</script>
+
+</body>
+</html>
